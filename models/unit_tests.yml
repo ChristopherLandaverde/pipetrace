@@ -17,8 +17,8 @@ unit_tests:
           total_events: 2
           session_source: newsletter
           session_medium: email
-          session_default_channel_grouping: Email
           is_engaged_session: true
+          session_default_channel_grouping: Email
         - session_key: u2-1767311940
           session_date: '2026-01-01'
           total_events: 1
