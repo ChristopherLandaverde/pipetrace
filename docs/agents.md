@@ -75,7 +75,7 @@ The **Data agent and GA4 cross-check** workflow (Actions tab, run manually) does
 The agent step needs one-time setup:
 - billing linked to the project, which data agents require;
 - the Gemini Data Analytics API and the Gemini for Google Cloud API enabled;
-- these roles on the CI service account: `roles/geminidataanalytics.dataAgentCreator`, `roles/geminidataanalytics.dataAgentStatelessUser` and `roles/datacatalog.catalogViewer`.
+- these roles on the CI service account, as the console names them: Gemini Data Analytics Data Agent Creator, Gemini Data Analytics Stateless Chat User, and Dataplex Catalog Viewer. They were granted in `foco-revops-ci` on 2026-11-17.
 
 ## Cross-checking GA4's own numbers
 
