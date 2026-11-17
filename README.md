@@ -4,7 +4,7 @@
 
 By Christopher Landaverde, FOCO Systems.
 
-`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 12 models, with 31 data tests and 1 native unit test. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
+`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 12 models, with 31 data tests, 1 native unit test, and 1 fixture-only check that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
 
 It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQuery Semantic Layer**. Sessions are modeled across daily export tables. Session attribution stays separate from lifetime acquisition. Polymorphic parameters are coerced safely. Immutable conversion tokens link sessions to CRM opportunities.
 
@@ -19,8 +19,8 @@ It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQ
              first-observed and linear weights that sum to 1 per opportunity;
              unmatched deals kept as Unattributed
 ✓ VERIFIED   14 local relational tests pass; dbt parse passes in CI;
-             native BigQuery build passes 45 of 45 (12 models, 32 data tests,
-             1 unit test) on a synthetic fixture, run 44109338907
+             native BigQuery build passes 45 of 45 (12 models, 31 data tests
+             + 1 fixture check, 1 unit test) on synthetic data, run 44109338907
 ```
 
 See the [validation record](VALIDATION.md) for what has run and what has not.

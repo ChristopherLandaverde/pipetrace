@@ -7,7 +7,7 @@ set -euo pipefail
 
 PROJECT="${1:?usage: bash scripts/run_walkthrough.sh <dev-project-id> [location]}"
 LOCATION="${2:-US}"
-PREFIX="foco_fixture_$(date +%Y%m%d%H%M%S)"
+PREFIX="foco_fixture_$(date -u +%Y%m%d%H%M%S)"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
@@ -36,6 +36,7 @@ fi
 # (about $0.006 at on-demand pricing). The fixture is a few KB.
 MAX_BYTES=1000000000
 sed "s/maximum_bytes_billed: .*/maximum_bytes_billed: ${MAX_BYTES}/" profiles.yml.example > logs/profiles.yml
+grep -q "maximum_bytes_billed: ${MAX_BYTES}" logs/profiles.yml || { echo "× BROKEN  cost cap not applied to logs/profiles.yml"; exit 1; }
 
 export DBT_BIGQUERY_PROJECT="$PROJECT"
 export DBT_BIGQUERY_DATASET="${PREFIX}_models"
@@ -43,12 +44,16 @@ export DBT_BIGQUERY_LOCATION="$LOCATION"
 
 # BigQuery sandbox projects drop partitions older than 60 days, so the fixture
 # starts 12 days ago: sessions on day 0-1, opportunities created on day 9.
-BASE_DATE="$(python3 -c 'import datetime as d; print(d.date.today()-d.timedelta(days=12))')"
+BASE_DATE="$(python3 -c 'import datetime as d; print(d.datetime.now(d.timezone.utc).date()-d.timedelta(days=12))')"
 END_DATE="$(python3 -c "import datetime as d; print(d.date.fromisoformat('$BASE_DATE')+d.timedelta(days=1))")"
 echo "↓ TRACED  fixture base date $BASE_DATE"
 echo "↓ TRACED  creating synthetic fixture datasets ${PREFIX}_{ga4,hubspot,salesforce}"
-python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" > "logs/${PREFIX}.sql"
+python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" --expiration-days 7 > "logs/${PREFIX}.sql"
 bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --maximum_bytes_billed="$MAX_BYTES" < "logs/${PREFIX}.sql" >/dev/null
+
+# Cleanup guard: every table and view in these datasets expires after 7 days,
+# set at dataset creation so it holds even if the run stops early.
+bq mk --project_id="$PROJECT" --location="$LOCATION" --dataset --default_table_expiration 604800 "${PROJECT}:${PREFIX}_models" >/dev/null
 
 .venv/bin/dbt deps
 .venv/bin/dbt debug --profiles-dir logs
@@ -62,11 +67,5 @@ if [ "$STATUS" -eq 0 ]; then
 else
   echo "× BROKEN  dbt build exited $STATUS; see $LOG"
 fi
-# Cleanup guard: every table this run created expires in 7 days.
-for ds in ga4 hubspot salesforce models; do
-  for t in $(bq ls --project_id="$PROJECT" --max_results=1000 --format=json "${PROJECT}:${PREFIX}_${ds}" 2>/dev/null | python3 -c 'import json,sys; [print(x["tableReference"]["tableId"]) for x in json.load(sys.stdin) if x.get("type")=="TABLE"]'); do
-    bq update --expiration 604800 "${PROJECT}:${PREFIX}_${ds}.${t}" >/dev/null
-  done
-done
 echo "Datasets created in $PROJECT: ${PREFIX}_ga4 ${PREFIX}_hubspot ${PREFIX}_salesforce ${PREFIX}_models (tables expire in 7 days)"
 exit "$STATUS"

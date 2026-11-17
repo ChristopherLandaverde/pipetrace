@@ -19,3 +19,5 @@
 - 2026-11-17: GitHub authenticates through Workload Identity Federation (pool `github`, provider `foco-revops-warehouse`), restricted by attribute condition to this repository. No key file exists.
 - 2026-11-17: The WIF provider path, service account email and project ID are written in the workflow file, not repo variables. They are not secrets, and the variables API is not reachable from the agent workspace.
 - 2026-11-17: Fixture dates are relative in CI (12 days back) because sandbox projects drop partitions older than 60 days. The generator's default date is unchanged.
+- 2026-11-17: Review finding 6 (restrict WIF by ref) declined for now. The repo is private with one writer, the service account reaches only the sandbox project, and a main-only condition would block PR runs. Revisit before adding collaborators or making the repo public.
+- 2026-11-17: Fixture datasets get a 7-day default table expiration at creation, which covers views and partial runs. This replaces the per-table expiry loop. Empty datasets remain and cost nothing.

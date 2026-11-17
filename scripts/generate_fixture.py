@@ -42,18 +42,21 @@ def main():
     parser.add_argument('--project',required=True)
     parser.add_argument('--prefix',default='foco_fixture')
     parser.add_argument('--location',default='US')
+    parser.add_argument('--expiration-days',type=int,default=0,help='Set default_table_expiration_days on the fixture datasets (0 = none).')
     parser.add_argument('--base-date',default='2026-01-01',help='Session day 0 (YYYY-MM-DD). Use a recent date in BigQuery sandbox projects, which drop partitions older than 60 days.')
     args=parser.parse_args()
     if not re.fullmatch(r'[a-z][a-z0-9-]{4,61}[a-z0-9]',args.project): parser.error('Invalid project ID')
     if not re.fullmatch(r'[a-z][a-z0-9_]{0,60}',args.prefix): parser.error('Invalid dataset prefix')
     if not re.fullmatch(r'[A-Za-z0-9-]+',args.location): parser.error('Invalid location')
-    b=date.fromisoformat(args.base_date)
+    try: b=date.fromisoformat(args.base_date)
+    except ValueError: parser.error('Invalid --base-date; use YYYY-MM-DD')
+    if args.expiration_days<0: parser.error('--expiration-days must be >= 0')
     d=lambda n: (b+timedelta(days=n)).isoformat()
     ts=lambda n,hms: d(n)+'T'+hms
     sid=lambda n,hms: int(datetime.fromisoformat(ts(n,hms)).replace(tzinfo=timezone.utc).timestamp())
     datasets={k:f'{args.project}.{args.prefix}_{k}' for k in ['ga4','hubspot','salesforce']}
     print('-- SYNTHETIC DATA ONLY. Create-only fixture; reruns fail instead of overwriting tables.')
-    for ds in datasets.values(): print(f'CREATE SCHEMA IF NOT EXISTS `{ds}` OPTIONS(location={literal(args.location)});')
+    for ds in datasets.values(): print(f'CREATE SCHEMA IF NOT EXISTS `{ds}` OPTIONS(location={literal(args.location)}'+(f', default_table_expiration_days={args.expiration_days}' if args.expiration_days else '')+');')
     bydate={
       d(0).replace('-',''):[event(ts(0,'23:59:00'),'u1',sid(0,'23:59:00'),'conversion-1','email')],
       d(1).replace('-',''):[event(ts(1,'00:01:00'),'u1',sid(0,'23:59:00'),engaged='1'),event(ts(1,'12:00:00'),'u2',sid(1,'12:00:00'),'conversion-2','cpc')],
