@@ -5,3 +5,7 @@ Implementation authored from the supplied PDF. The 12-model dbt repository, nati
 2026-11-17: `dbt deps` and `dbt parse` pass in GitHub Actions and locally (12 models, 31 data tests, 1 unit test, 4 sources). BigQuery execution remains blocked: this workspace cannot reach googleapis.com, and no development project or credentials have been selected. See VALIDATION.md and docs/synthetic-walkthrough.md. No production deployment, public visibility change, real client data, or client-stack writes occurred.
 
 Source is on GitHub at ChristopherLandaverde/foco-revops-warehouse (private). `main` holds the initial import; brand and validation updates are on `build/brand-and-parse` as a draft PR.
+
+## Paused 2026-11-16
+
+Native BigQuery walkthrough not run. `scripts/run_walkthrough.sh` is ready, with a 1 GB billed cap per query and 7-day table expiry. To resume, on a machine with Google Cloud access: install the Google Cloud SDK (`brew install --cask google-cloud-sdk`), then run `bash scripts/run_walkthrough.sh <dev-project-id>`. The agent workspace and the Mac VM cannot reach googleapis.com.
