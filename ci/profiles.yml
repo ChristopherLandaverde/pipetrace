@@ -1,0 +1,10 @@
+foco_bigquery:
+  target: parse
+  outputs:
+    parse:
+      type: bigquery
+      method: oauth
+      project: synthetic-demo
+      dataset: foco_ci_parse
+      location: US
+      threads: 1

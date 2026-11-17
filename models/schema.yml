@@ -1,0 +1,74 @@
+version: 2
+models:
+  - name: stg_ga4_events
+    description: Daily export events within the configured window plus boundary buffer. No event-level deduplication is assumed.
+    columns:
+      - name: event_timestamp
+        data_tests: [not_null]
+  - name: stg_hubspot_contacts
+    description: Restricted current contact snapshot. Connector history must be resolved upstream.
+    columns:
+      - name: hubspot_contact_id
+        data_tests: [unique, not_null]
+      - name: created_at
+        data_tests: [not_null]
+  - name: stg_sfdc_leads
+    description: Restricted non-deleted Salesforce leads. Joins use IDs and conversion tokens, never email.
+    columns:
+      - name: sfdc_lead_id
+        data_tests: [unique, not_null]
+  - name: stg_sfdc_opportunities
+    description: Current non-deleted opportunities. ARR stays null when unavailable; pipeline_value explicitly falls back to Amount.
+    columns:
+      - name: opportunity_id
+        data_tests: [unique, not_null]
+      - name: created_at
+        data_tests: [not_null]
+      - name: is_won
+        data_tests: [not_null]
+      - name: is_closed
+        data_tests: [not_null]
+  - name: int_ga4_sessions
+    description: One row per user_pseudo_id and ga_session_id across all scanned export days. Session date uses session ID Unix seconds in property timezone.
+    columns:
+      - name: session_key
+        data_tests: [unique, not_null]
+      - name: session_date
+        data_tests: [not_null]
+      - name: attribution_method
+        description: Provenance of the selected complete attribution record; lifetime acquisition is never substituted.
+  - name: int_session_conversion_tokens
+    description: One row per session and immutable conversion token, preserving multiple form submissions.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [session_key, original_conversion_id]
+  - name: int_crm_touchpoint_linkage
+    description: One row per opportunity/session, or one null-session row for unmatched opportunities. Ranked ID paths suppress duplicate evidence.
+  - name: dim_touchpoints
+    description: Restricted session dimension containing pseudonymous IDs and page URLs. Not a public or immutable history table.
+    columns:
+      - name: touchpoint_id
+        data_tests: [unique, not_null]
+  - name: fct_ga4_sessions_daily
+    description: Daily channel/campaign session aggregates. unique_visitors is not additive across rows or dates.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [session_date, session_default_channel_grouping, session_source, session_medium, session_campaign]
+    columns:
+      - name: session_date
+        data_tests: [not_null]
+      - name: total_sessions
+        data_tests: [not_null]
+  - name: fct_revops_pipeline_attribution
+    description: Opportunity/session attribution bridge. Sum allocated fields, never opp_arr or opp_pipeline_value. First touch means first observed eligible linked session in the configured horizon.
+    columns:
+      - name: opportunity_id
+        data_tests: [not_null]
+      - name: channel_grouping
+        data_tests: [not_null]
+  - name: fct_pipeline_attribution_daily
+    description: Preferred BI/agent revenue surface. Allocated values by opportunity creation date, channel, currency, and revenue basis. Do not sum currencies together.
+  - name: audit_ga4_unkeyed_events
+    description: Events excluded from session modeling due to missing or invalid identifiers. Review consent and instrumentation before interpreting coverage.

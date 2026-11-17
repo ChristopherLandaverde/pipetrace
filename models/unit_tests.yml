@@ -1,0 +1,35 @@
+version: 2
+unit_tests:
+  - name: sessions_midnight_attribution_and_organic_social
+    model: int_ga4_sessions
+    overrides:
+      vars:
+        ga4_start_date: '2026-01-01'
+        ga4_end_date: '2026-01-02'
+        ga4_timezone: UTC
+    given:
+      - input: ref('stg_ga4_events')
+        rows: [{"user_id": null, "page_location": "https://example.test/", "gclid": null, "fbclid": null, "original_conversion_id": null, "session_engaged": null, "cross_source": "newsletter", "cross_medium": "email", "cross_campaign": "winter", "last_click_source": null, "last_click_medium": null, "last_click_campaign": null, "google_ads_campaign": null, "utm_source": null, "utm_medium": null, "utm_campaign": null, "session_key": "u1-1767311940", "user_pseudo_id": "u1", "ga_session_id": 1767311940, "event_timestamp": "2026-01-01 23:59:00+00:00", "event_order_key": "2026-01-01 23:59:00+00:00", "event_name": "page_view", "engagement_time_msec": 0}, {"user_id": null, "page_location": null, "gclid": null, "fbclid": null, "original_conversion_id": null, "session_engaged": "1", "cross_source": null, "cross_medium": null, "cross_campaign": null, "last_click_source": null, "last_click_medium": null, "last_click_campaign": null, "google_ads_campaign": null, "utm_source": null, "utm_medium": null, "utm_campaign": null, "session_key": "u1-1767311940", "user_pseudo_id": "u1", "ga_session_id": 1767311940, "event_timestamp": "2026-01-02 00:01:00+00:00", "event_order_key": "2026-01-02 00:01:00+00:00", "event_name": "page_view", "engagement_time_msec": 0}, {"user_id": null, "page_location": null, "gclid": null, "fbclid": "organic-click", "original_conversion_id": null, "session_engaged": null, "cross_source": null, "cross_medium": null, "cross_campaign": null, "last_click_source": null, "last_click_medium": null, "last_click_campaign": null, "google_ads_campaign": null, "utm_source": "facebook", "utm_medium": "social", "utm_campaign": null, "session_key": "u2-1767311940", "user_pseudo_id": "u2", "ga_session_id": 1767311940, "event_timestamp": "2026-01-01 23:59:00+00:00", "event_order_key": "2026-01-01 23:59:00+00:00", "event_name": "page_view", "engagement_time_msec": 0}, {"user_id": null, "page_location": null, "gclid": null, "fbclid": null, "original_conversion_id": null, "session_engaged": null, "cross_source": null, "cross_medium": null, "cross_campaign": null, "last_click_source": null, "last_click_medium": null, "last_click_campaign": null, "google_ads_campaign": null, "utm_source": null, "utm_medium": null, "utm_campaign": null, "session_key": "u3-1767311940", "user_pseudo_id": "u3", "ga_session_id": 1767311940, "event_timestamp": "2026-01-01 23:59:00+00:00", "event_order_key": "direct", "event_name": "page_view", "engagement_time_msec": 0}, {"user_id": null, "page_location": null, "gclid": null, "fbclid": null, "original_conversion_id": null, "session_engaged": null, "cross_source": null, "cross_medium": null, "cross_campaign": null, "last_click_source": null, "last_click_medium": null, "last_click_campaign": null, "google_ads_campaign": null, "utm_source": null, "utm_medium": null, "utm_campaign": null, "session_key": null, "user_pseudo_id": null, "ga_session_id": 1767311940, "event_timestamp": "2026-01-01 23:59:00+00:00", "event_order_key": "direct", "event_name": "page_view", "engagement_time_msec": 0}]
+    expect:
+      rows:
+        - session_key: u1-1767311940
+          session_date: '2026-01-01'
+          total_events: 2
+          session_source: newsletter
+          session_medium: email
+          session_default_channel_grouping: Email
+          is_engaged_session: true
+        - session_key: u2-1767311940
+          session_date: '2026-01-01'
+          total_events: 1
+          session_source: facebook
+          session_medium: social
+          is_engaged_session: false
+          session_default_channel_grouping: Organic Social
+        - session_key: u3-1767311940
+          session_date: '2026-01-01'
+          total_events: 1
+          session_source: null
+          session_medium: null
+          is_engaged_session: false
+          session_default_channel_grouping: Direct

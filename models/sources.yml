@@ -1,0 +1,23 @@
+version: 2
+sources:
+  - name: ga4
+    database: "{{ var('ga4_project', target.project) }}"
+    schema: "{{ var('ga4_dataset') }}"
+    description: Daily GA4 export only. Intraday tables are excluded by the suffix range.
+    tables:
+      - name: events
+        identifier: events_*
+  - name: hubspot
+    database: "{{ var('hubspot_project', target.project) }}"
+    schema: "{{ var('hubspot_dataset') }}"
+    tables:
+      - name: contacts
+        description: Current contact snapshot with the property_* contract in docs/source-contracts.md.
+  - name: salesforce
+    database: "{{ var('salesforce_project', target.project) }}"
+    schema: "{{ var('salesforce_dataset') }}"
+    tables:
+      - name: leads
+        identifier: Lead
+      - name: opportunities
+        identifier: Opportunity
