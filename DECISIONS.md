@@ -21,3 +21,6 @@
 - 2026-11-17: Fixture dates are relative in CI (12 days back) because sandbox projects drop partitions older than 60 days. The generator's default date is unchanged.
 - 2026-11-17: Review finding 6 (restrict WIF by ref) declined for now. The repo is private with one writer, the service account reaches only the sandbox project, and a main-only condition would block PR runs. Revisit before adding collaborators or making the repo public.
 - 2026-11-17: Fixture datasets get a 7-day default table expiration at creation, which covers views and partial runs. This replaces the per-table expiry loop. Empty datasets remain and cost nothing.
+- 2026-11-17: Public name PipeTrace (Christopher's choice), an instrument name for what it verifies: pipeline traced to sessions. The repo is renamed to `pipetrace` and the dbt project to `pipetrace`. There are no external consumers, so the vars namespace change breaks nothing.
+- 2026-11-17: Logo in the OSRA/Rabbit Focosys palette (#10231F tile, #F3F0E6 paper, #D7FF69 verified) per Christopher, not the navy linter family.
+- 2026-11-17: GCP project `foco-revops-ci` and WIF provider `foco-revops-warehouse` keep their IDs (immutable). The provider condition and service account grant were widened to both repo names during the rename, then narrowed to `pipetrace` once CI passed under the new name.

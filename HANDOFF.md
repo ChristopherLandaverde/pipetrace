@@ -1,4 +1,4 @@
-# Handoff — foco-revops-warehouse
+# Handoff — PipeTrace
 
 `Handoff note · 2026-11-16 · State, blockers, and the next three steps`
 
@@ -7,7 +7,7 @@ Read this first tomorrow. It records where the build stopped and how to resume.
 ## Where things stand
 
 ```
-□ OBSERVED   Repo: github.com/ChristopherLandaverde/foco-revops-warehouse (private)
+□ OBSERVED   Repo: github.com/ChristopherLandaverde/pipetrace (private; renamed from foco-revops-warehouse 2026-11-17)
              main = 8592524: PR #1 merged 2026-11-17
 ✓ VERIFIED   test_local.py 14/14 · check_repository.py PASS · dbt parse in CI
              Native BigQuery build 45/45 in GitHub Actions (run 44109338907)
@@ -20,7 +20,7 @@ No Terminal steps. The `Native BigQuery walkthrough` workflow runs on PRs that t
 
 - GCP project `foco-revops-ci`: no billing, so BigQuery runs in the free sandbox.
 - Service account `foco-ci-walkthrough`: BigQuery Job User and Data Editor on that project only.
-- Workload Identity Federation pool `github`, provider `foco-revops-warehouse`: accepts only this repository. No key file.
+- Workload Identity Federation pool `github`, provider `foco-revops-warehouse`: accepts only this repository. No key file. The provider and GCP project keep their original IDs, because Google does not allow renaming them.
 - Logs are kept as the `walkthrough-logs` artifact for 7 days.
 
 ## Cost guards
@@ -47,6 +47,6 @@ The Claude workspace and the Mac VM both block `*.googleapis.com`, so Claude can
 
 ## Links
 
-- PR #1 (merged): https://github.com/ChristopherLandaverde/foco-revops-warehouse/pull/1
+- PR #1 (merged): https://github.com/ChristopherLandaverde/pipetrace/pull/1
 - Validation record: `VALIDATION.md`
 - Walkthrough detail: `docs/synthetic-walkthrough.md`
