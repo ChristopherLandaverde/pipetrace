@@ -20,7 +20,9 @@ for cmd in python3 gcloud bq; do
   command -v "$cmd" >/dev/null || { echo "× BROKEN  missing $cmd (install Google Cloud SDK: brew install --cask google-cloud-sdk)"; exit 1; }
 done
 
-if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
+if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
+  echo "↓ TRACED  using credentials from GOOGLE_APPLICATION_CREDENTIALS (CI)"
+elif ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
   echo "↓ TRACED  no Application Default Credentials; opening browser sign-in"
   gcloud auth application-default login
 fi

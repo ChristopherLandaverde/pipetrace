@@ -1,0 +1,44 @@
+name: Native BigQuery walkthrough
+# Synthetic data only. Runs the dbt build against a disposable fixture in a
+# development project. Auth is Workload Identity Federation: no key file.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'models/**'
+      - 'macros/**'
+      - 'tests/**'
+      - 'dbt_project.yml'
+      - 'packages.yml'
+      - 'scripts/run_walkthrough.sh'
+      - 'scripts/generate_fixture.py'
+      - '.github/workflows/walkthrough.yml'
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: walkthrough-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  walkthrough:
+    if: ${{ vars.GCP_WIF_PROVIDER != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: bash scripts/run_walkthrough.sh "${{ vars.GCP_PROJECT_ID }}" "${{ vars.GCP_LOCATION || 'US' }}"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: walkthrough-logs
+          path: logs/
+          retention-days: 7
