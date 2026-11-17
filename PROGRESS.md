@@ -6,6 +6,6 @@ Implementation authored from the supplied PDF. The 12-model dbt repository, nati
 
 Source is on GitHub at ChristopherLandaverde/foco-revops-warehouse (private). `main` holds the initial import; brand and validation updates are on `build/brand-and-parse` as a draft PR.
 
-## Paused 2026-11-16
+## 2026-11-17: native walkthrough passes
 
-Native BigQuery walkthrough not run. `scripts/run_walkthrough.sh` is ready, with a 1 GB billed cap per query and 7-day table expiry. To resume, on a machine with Google Cloud access: install the Google Cloud SDK (`brew install --cask google-cloud-sdk`), then run `bash scripts/run_walkthrough.sh <dev-project-id>`. The agent workspace and the Mac VM cannot reach googleapis.com.
+GitHub Actions job `Native BigQuery walkthrough` signs in to project `foco-revops-ci` through Workload Identity Federation (no key file) and runs `scripts/run_walkthrough.sh`. Run 44109338907 passed 45 of 45. It runs on every PR that touches models, macros, tests or the fixture, and on manual dispatch.

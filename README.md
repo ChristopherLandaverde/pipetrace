@@ -19,7 +19,8 @@ It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQ
              first-observed and linear weights that sum to 1 per opportunity;
              unmatched deals kept as Unattributed
 ✓ VERIFIED   14 local relational tests pass; dbt parse passes in CI;
-             native BigQuery tests are authored but not yet run
+             native BigQuery build passes 45 of 45 (12 models, 32 data tests,
+             1 unit test) on a synthetic fixture, run 44109338907
 ```
 
 See the [validation record](VALIDATION.md) for what has run and what has not.

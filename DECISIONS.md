@@ -15,3 +15,7 @@
 - 2026-11-17: Vendored dbt_utils 1.3.0 from its GitHub tag into the git-ignored `dbt_packages/` for the local parse only, because dbt Hub is blocked here. `packages.yml` is unchanged; CI resolves from Hub.
 - 2026-11-17: Kept dbt-core pinned to 1.10.x even though dbt reports that line deprecated. An upgrade is a dependency change outside the approved stack and needs its own parse and native run.
 - 2026-11-17: Rewrote the README opening as a foco-brand trace with resource counts. The repository stays private; making it public is Christopher's decision.
+- 2026-11-17: Created GCP project `foco-revops-ci` (org focosys.io) for CI only, with no billing account, so BigQuery runs in the free sandbox. The service account `foco-ci-walkthrough` holds only BigQuery Job User and Data Editor on that project.
+- 2026-11-17: GitHub authenticates through Workload Identity Federation (pool `github`, provider `foco-revops-warehouse`), restricted by attribute condition to this repository. No key file exists.
+- 2026-11-17: The WIF provider path, service account email and project ID are written in the workflow file, not repo variables. They are not secrets, and the variables API is not reachable from the agent workspace.
+- 2026-11-17: Fixture dates are relative in CI (12 days back) because sandbox projects drop partitions older than 60 days. The generator's default date is unchanged.

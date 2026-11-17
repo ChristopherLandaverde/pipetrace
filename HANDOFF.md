@@ -8,36 +8,20 @@ Read this first tomorrow. It records where the build stopped and how to resume.
 
 ```
 □ OBSERVED   Repo: github.com/ChristopherLandaverde/foco-revops-warehouse (private)
-             main = f222123, the initial import from the zip
-             build/brand-and-parse = draft PR #1, not merged
-✓ VERIFIED   test_local.py 14/14 · check_repository.py PASS
-             dbt deps + dbt parse pass in GitHub Actions on main and on PR #1
-             parse resolves 12 models, 31 data tests, 1 unit test, 4 sources
-× OPEN       Native BigQuery walkthrough has never run
-             dbt compile has never run (needs Google credentials)
+             main = f222123, the initial import; draft PR #1 = build/brand-and-parse
+✓ VERIFIED   test_local.py 14/14 · check_repository.py PASS · dbt parse in CI
+             Native BigQuery build 45/45 in GitHub Actions (run 44109338907)
+× OPEN       Not yet run against real source data. PR #1 not merged.
 ```
 
-What PR #1 contains:
+## How the native test runs now
 
-- README rewritten to the foco-brand trace format: a scope line, the □ × + ✓ block, counts as evidence, and the christopher@focosys.io CTA.
-- VALIDATION, PROGRESS, PLAN and DECISIONS updated to match what actually ran.
-- `scripts/run_walkthrough.sh`: a one-command BigQuery test on synthetic data, with cost guards.
-- This file.
+No Terminal steps. The `Native BigQuery walkthrough` workflow runs on PRs that touch models, macros, tests or the fixture, and can be started by hand from the Actions tab.
 
-## Resume: the next three steps
-
-1. **Install the Google Cloud SDK on the Mac.** The last run stopped here.
-   ```bash
-   brew install --cask google-cloud-sdk
-   ```
-2. **Choose a dev or sandbox GCP project** under christopher@focosys.io. Never a client project.
-3. **Run the walkthrough:**
-   ```bash
-   cd ~/projects/foco-revops-warehouse && bash scripts/run_walkthrough.sh <dev-project-id>
-   ```
-   On first run it opens a Google sign-in in the browser; approve it once. The log is written to `logs/walkthrough-<prefix>.log`. Then ask Claude to read the log and fix any failures on PR #1.
-
-Expected result: `✓ VERIFIED  dbt build passed against synthetic fixture`. Expect one or two fix rounds first. The SQL has never run on BigQuery, and the likely trouble spots are STRUCT typing, SAFE_CAST behavior and the `events_*` wildcard scan.
+- GCP project `foco-revops-ci`: no billing, so BigQuery runs in the free sandbox.
+- Service account `foco-ci-walkthrough`: BigQuery Job User and Data Editor on that project only.
+- Workload Identity Federation pool `github`, provider `foco-revops-warehouse`: accepts only this repository. No key file.
+- Logs are kept as the `walkthrough-logs` artifact for 7 days.
 
 ## Cost guards
 
