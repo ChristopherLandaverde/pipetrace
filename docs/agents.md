@@ -24,7 +24,7 @@ Give the agent read access to these two tables only:
 | `fct_pipeline_attribution_daily` | Opportunity creation date × channel × currency × revenue basis | Pipeline and won value by channel |
 | `fct_ga4_sessions_daily` | Session date × channel × source × medium × campaign | Traffic, engagement and lead-conversion sessions |
 
-Leave out the raw `events_*` tables, the staging views and `fct_revops_pipeline_attribution`. The bridge table repeats `opp_pipeline_value` on every touchpoint row, so an agent that sums it multiplies revenue.
+Leave out the raw `events_*` tables, the staging views and `fct_revops_pipeline_attribution`. The bridge table repeats `opp_pipeline_value` and `opp_arr` on every touchpoint row, so an agent that sums them multiplies revenue.
 
 Grant the agent's identity `roles/bigquery.dataViewer` on the output dataset and `roles/bigquery.jobUser` on the project. Set a `maximum_bytes_billed` cap on its connection.
 
