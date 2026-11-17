@@ -1,6 +1,6 @@
 # Validation record
 
-Implementation based on Christopher's supplied FOCO Analytics Engineering Lab PDF. Synthetic data only. Status: implementation built; native warehouse validation remains blocked.
+Implementation based on Christopher's supplied FOCO Analytics Engineering Lab PDF. Synthetic data only. Status: implementation built and parsed by dbt; native warehouse validation remains blocked.
 
 | Check | Observed result |
 |---|---|
@@ -13,9 +13,10 @@ Implementation based on Christopher's supplied FOCO Analytics Engineering Lab PD
 | Python syntax / fixture generation | Parsed; synthetic BigQuery SQL generation succeeded |
 | Private-key/local-profile scan | No embedded private keys or local runtime profile found by the repository checker; not a comprehensive security scan |
 | Independent code review | Completed; fixture typing and incomplete native expected rows corrected |
-| dbt dependency installation | Blocked: pypi.org DNS resolution unavailable; no dbt executable installed |
-| dbt parse / compile | Not run; requires the blocked dependencies |
-| Native BigQuery unit/data tests | Not run; requires dbt and an authenticated development project |
+| dbt dependency installation | Passed in GitHub Actions (`dbt deps`, run 44009430700, 2026-11-17). Locally: dbt-core 1.10.23 / dbt-bigquery 1.10.3 installed; dbt Hub blocked by egress policy, so dbt_utils 1.3.0 was vendored from its GitHub tag for the parse check |
+| dbt parse | Passed, exit 0: GitHub Actions on `main` (f222123) and locally with `--profiles-dir ci --no-partial-parse`. Resolved 12 models, 31 data tests, 1 unit test, 4 sources |
+| dbt compile | Not run; the BigQuery adapter requires Application Default Credentials |
+| Native BigQuery unit/data tests | Not run; requires an authenticated BigQuery development project |
 | Production deployment / public repository | Not performed |
 
 ## What the local tests prove
@@ -32,4 +33,4 @@ The floating-point parameter test uses a fractional value to avoid assuming how 
 
 ## Remaining release gates
 
-Run `dbt deps`, `dbt parse --profiles-dir ci --no-partial-parse`, and the complete `docs/synthetic-walkthrough.md` in a development project. Verify connector contracts, timezone, source completeness, IAM restrictions, and actual bytes scanned. No production-readiness claim is made until native checks pass. External cloud/warehouse jobs were not run; no Gateway or other paid model API was invoked by the implementation.
+`dbt deps` and `dbt parse` now pass. Run `dbt compile` and the complete `docs/synthetic-walkthrough.md` in an authenticated development project. Verify connector contracts, timezone, source completeness, IAM restrictions, and actual bytes scanned. No production-readiness claim is made until native checks pass. External cloud/warehouse jobs were not run; no Gateway or other paid model API was invoked by the implementation.

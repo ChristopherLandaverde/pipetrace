@@ -1,17 +1,28 @@
-# foco-revops-warehouse
+# foco-revops-warehouse — traces GA4 sessions to CRM pipeline in BigQuery and verifies that the attributed revenue reconciles
 
-GA4 sessions and CRM pipeline attribution in BigQuery, with checks that show where the numbers came from.
+`dbt package · Nov 2026 · Implementation notes, assumptions, and limits · Walkthrough / no client data`
 
-Developed by Christopher Landaverde at Focosys. Implementation, November 2026 · Synthetic examples only.
+By Christopher Landaverde, FOCO Systems.
 
-This dbt package builds the readable layer described in **FOCO Analytics Engineering Lab: BigQuery Semantic Layer**. It models sessions across daily export tables, separates session attribution from lifetime acquisition, coerces polymorphic parameters safely, and links immutable conversion tokens to CRM opportunities.
+`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 12 models, with 31 data tests and 1 native unit test. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
 
-## What it verifies
+It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQuery Semantic Layer**. Sessions are modeled across daily export tables. Session attribution stays separate from lifetime acquisition. Polymorphic parameters are coerced safely. Immutable conversion tokens link sessions to CRM opportunities.
 
-- **OBSERVED** — GA4 daily exports, HubSpot contacts, and Salesforce leads/opportunities.
-- **BROKEN** — missing session identifiers, conversion tokens shared across users, duplicate CRM records, and revenue that fails reconciliation.
-- **REPAIRED** — one session per composite key; ranked ID linkage; first-observed and linear allocations that sum to one per opportunity.
-- **VERIFIED** — local relational acceptance tests plus native dbt unit and data tests. See [validation status](VALIDATION.md) for what has actually run.
+## The trace
+
+```
+□ OBSERVED   GA4 daily exports, HubSpot contacts, Salesforce leads and opportunities
+× BROKEN     sessions split at midnight, missing session IDs, parameter type drift,
+             conversion tokens shared across users, duplicate CRM paths that
+             multiply revenue
++ REPAIRED   one session per composite key; ranked deterministic ID linkage;
+             first-observed and linear weights that sum to 1 per opportunity;
+             unmatched deals kept as Unattributed
+✓ VERIFIED   14 local relational tests pass; dbt parse passes in CI;
+             native BigQuery tests are authored but not yet run
+```
+
+See the [validation record](VALIDATION.md) for what has run and what has not.
 
 ## Quickstart
 
@@ -60,7 +71,7 @@ packages:
   - local: /absolute/path/to/foco-revops-warehouse
 ```
 
-Run `dbt deps` in the consuming project and configure variables under `foco_revops_warehouse` in that project's `vars`. The package also works as a standalone modeling repository. A remote Git URL can be used after you publish your own repository; no remote repository is created by this build.
+Run `dbt deps` in the consuming project and configure variables under `foco_revops_warehouse` in that project's `vars`. The package also works as a standalone modeling repository. A Git URL package entry also works once the repository is reachable from your dbt environment.
 
 ## Model surfaces
 
@@ -89,4 +100,4 @@ First touch means the earliest **observed, token-linked** eligible session, not 
 
 This is a governed SQL modeling layer, not a deployed dbt Semantic Layer/MetricFlow service. Metric definitions and safe query examples are included. Production validation, IAM grants, and scheduling remain deployment tasks.
 
-Field notes on marketing systems that hold up under inspection: [focosys.io](https://focosys.io).
+Field notes on this problem ↗ [focosys.io](https://focosys.io) · Start with the decision you cannot trust: [christopher@focosys.io](mailto:christopher@focosys.io)

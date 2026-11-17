@@ -2,7 +2,7 @@
 
 - Build the supplied PDF as the contract; retain its requested layer and filenames while correcting unsafe SQL. User explicitly requested this repository.
 - Use Python/SQL/dbt for a data pipeline despite application defaults; they match the requested BigQuery stack.
-- Use a new isolated local repository on build/semantic-warehouse. No existing main checkout is modified and no public remote is created.
+- Use a new isolated local repository on build/semantic-warehouse. No existing main checkout is modified and no public remote is created. (Superseded 2026-11-17, see below.)
 - Rebuild configured observation-window tables in v1. This handles late arrivals, deletions and CRM corrections without stale incremental allocations. Window and cost limits are documented.
 - Use session ID seconds for the stable session-start date, property timezone, and a raw boundary buffer. Finite buffers cannot capture arbitrarily long sessions.
 - Select an attribution struct as a unit; never replace session source with lifetime acquisition.
@@ -11,3 +11,7 @@
 - Keep ARR separate from Amount, and retain currency/revenue_basis in all aggregate revenue surfaces.
 - Add Python standard-library relational acceptance tests because local package downloads are blocked. These execute actual CRM/attribution SQL with narrowly documented dialect substitutions; native BigQuery tests remain mandatory.
 - Treat the README's Readable Layer as governed SQL tables, not an implicitly deployed dbt Semantic Layer service.
+- 2026-11-17: Imported the supplied archive as the initial commit on the empty `main` branch at Christopher's request. Later changes go to `build/*` branches as draft PRs.
+- 2026-11-17: Vendored dbt_utils 1.3.0 from its GitHub tag into the git-ignored `dbt_packages/` for the local parse only, because dbt Hub is blocked here. `packages.yml` is unchanged; CI resolves from Hub.
+- 2026-11-17: Kept dbt-core pinned to 1.10.x even though dbt reports that line deprecated. An upgrade is a dependency change outside the approved stack and needs its own parse and native run.
+- 2026-11-17: Rewrote the README opening as a foco-brand trace with resource counts. The repository stays private; making it public is Christopher's decision.
