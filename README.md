@@ -1,8 +1,36 @@
-# foco-revops-warehouse — traces GA4 sessions to CRM pipeline in BigQuery and verifies that the attributed revenue reconciles
+<p align="center">
+  <img src="docs/images/logo.png" width="96" height="96" alt="PipeTrace logo: three paper session dots on a dark green tile, their lines joining into one pipeline line that ends at a lime total bar">
+</p>
+
+<h1 align="center">PipeTrace</h1>
+
+<p align="center">
+  <strong>A deal can be credited to three channels and still add up to more than it was worth. Trace every pipeline dollar to the GA4 session behind it, and prove it sums back to the deal.</strong>
+</p>
+
+<p align="center">
+  12 dbt models on BigQuery · first-observed and linear credit that sums to 1 per opportunity · 45 of 45 checks pass on BigQuery in CI · read-only on GA4, HubSpot and Salesforce
+</p>
+
+<p align="center">
+  <a href="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/ci.yml"><img src="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/ci.yml/badge.svg?branch=main" alt="Validate package"></a>
+  <a href="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/walkthrough.yml"><img src="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/walkthrough.yml/badge.svg?branch=main" alt="Native BigQuery walkthrough"></a>
+  <a href="requirements.txt"><img src="https://img.shields.io/badge/dbt-1.10-10231F" alt="dbt Core 1.10"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-10231F" alt="License: MIT"></a>
+</p>
+
+<p align="center">
+  <a href="#quickstart">Quickstart</a> · <a href="#the-trace">The trace</a> · <a href="#model-surfaces">Model surfaces</a> · <a href="#limits-that-affect-interpretation">Known limits</a> · <a href="VALIDATION.md">Validation record</a> · <a href="docs/synthetic-walkthrough.md">Synthetic walkthrough</a>
+</p>
 
 `dbt package · Nov 2026 · Implementation notes, assumptions, and limits · Walkthrough / no client data`
 
-By Christopher Landaverde, FOCO Systems.
+PipeTrace is a dbt package for marketing ops and RevOps analysts who have to say which channels sourced pipeline, and defend the number. By Christopher Landaverde, FOCO Systems. Sibling of [Open Source Revenue Attribution](https://github.com/ChristopherLandaverde/open-source-revenue-attribution), which does the same job as a self-hosted app.
+
+<p align="center">
+  <img src="docs/images/pipeline.svg" width="880" alt="PipeTrace pipeline. Sources: GA4 daily export, HubSpot contacts with conversion tokens, Salesforce leads and opportunities. int_ga4_sessions builds one row per user and session ID. int_session_conversion_tokens keeps every token per session. int_crm_touchpoint_linkage joins tokens to opportunities by ranked deterministic ID paths, keeping unmatched deals. fct_revops_pipeline_attribution weights sessions first-observed and linear, each summing to 1, and fct_pipeline_attribution_daily is the BI surface. Checks: midnight sessions count once, no token shared across users, every opportunity present, weights sum to 1, pipeline reconciles to source value.">
+  <br><sub>Model names and checks as built. The counts come from the CI run on synthetic data.</sub>
+</p>
 
 `Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 12 models, with 31 data tests, 1 native unit test, and 1 fixture-only check that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
 
@@ -35,7 +63,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 cp profiles.yml.example profiles.yml
 export DBT_BIGQUERY_PROJECT=your-development-project
-export DBT_BIGQUERY_DATASET=foco_revops_dev
+export DBT_BIGQUERY_DATASET=pipetrace_dev
 export DBT_BIGQUERY_LOCATION=US
 # Authenticate outside the repository using your approved Google Cloud account.
 gcloud auth application-default login
@@ -69,10 +97,10 @@ Use this checkout as a local package in a consuming dbt project:
 
 ```yaml
 packages:
-  - local: /absolute/path/to/foco-revops-warehouse
+  - local: /absolute/path/to/pipetrace
 ```
 
-Run `dbt deps` in the consuming project and configure variables under `foco_revops_warehouse` in that project's `vars`. The package also works as a standalone modeling repository. A Git URL package entry also works once the repository is reachable from your dbt environment.
+Run `dbt deps` in the consuming project and configure variables under `pipetrace` in that project's `vars`. The package also works as a standalone modeling repository. A Git URL package entry also works once the repository is reachable from your dbt environment.
 
 ## Model surfaces
 
