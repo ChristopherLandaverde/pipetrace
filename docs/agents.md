@@ -79,7 +79,7 @@ The agent step needs one-time setup:
 
 ## Cross-checking GA4's own numbers
 
-`scripts/ga4_crosscheck.py` compares GA4's Data API session counts per day with `fct_ga4_sessions_daily`. The two never match exactly, because of thresholding and session counting differences, so it flags days that drift beyond a tolerance (5% by default). It skips days where both sides have under 20 sessions. It prints percentages only, not traffic counts, because CI logs on a public repository are public. Pass `--show-counts` locally to see the counts.
+`scripts/ga4_crosscheck.py` compares GA4's Data API session counts per day with `fct_ga4_sessions_daily`. The two never match exactly, because of thresholding and session counting differences, so it flags days that drift beyond a tolerance (5% by default). It skips days where both sides have under 20 sessions. It prints percentages only, not traffic counts, because CI logs on a public repository are public. Pass `--show-counts` locally to see the counts. GA4 reports dates in the property's timezone, so set `ga4_timezone` to match.
 
 The `crosscheck` step of the workflow runs it. It needs:
 - a GA4 property with BigQuery export linked, plus PipeTrace's marts built from that export;

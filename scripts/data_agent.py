@@ -29,7 +29,7 @@ def build_agent(config, project, dataset):
     tables = [{'projectId': project, 'datasetId': dataset, 'tableId': t} for t in config['tables']]
     examples = [
         {'naturalLanguageQuestion': q['naturalLanguageQuestion'],
-         'sqlQuery': q['sqlQuery'].format(project=project, dataset=dataset)}
+         'sqlQuery': q['sqlQuery'].replace('{project}', project).replace('{dataset}', dataset)}
         for q in config['exampleQueries']
     ]
     context = {
@@ -51,21 +51,44 @@ def _session():
     return AuthorizedSession(creds)
 
 
+def _wait(s, op, timeout_s=120):
+    """Poll a long-running Operation until done; fail on error."""
+    import time
+    deadline = time.time() + timeout_s
+    while not op.get('done'):
+        if time.time() > deadline:
+            raise SystemExit(f'× BROKEN  operation {op.get("name")} not done after {timeout_s}s')
+        time.sleep(3)
+        r = s.get(f'{API}/{op["name"]}', timeout=30)
+        if not r.ok:
+            raise SystemExit(f'× BROKEN  polling {op.get("name")}: HTTP {r.status_code} {r.text[:300]}')
+        op = r.json()
+    if 'error' in op:
+        raise SystemExit(f'× BROKEN  operation failed: {json.dumps(op["error"])[:500]}')
+    return op
+
+
 def upsert(project, location, agent_id, body):
     parent = f'projects/{project}/locations/{location}'
     name = f'{parent}/dataAgents/{agent_id}'
     s = _session()
-    got = s.get(f'{API}/{name}')
+    got = s.get(f'{API}/{name}', timeout=30)
     if got.status_code == 404:
-        r = s.post(f'{API}/{parent}/dataAgents', params={'dataAgentId': agent_id}, json=body)
+        r = s.post(f'{API}/{parent}/dataAgents', params={'dataAgentId': agent_id}, json=body, timeout=60)
         action = 'created'
     elif got.ok:
-        r = s.patch(f'{API}/{name}', params={'updateMask': 'displayName,description,dataAnalyticsAgent'}, json=body)
+        r = s.patch(f'{API}/{name}', params={'updateMask': 'displayName,description,dataAnalyticsAgent'}, json=body, timeout=60)
         action = 'updated'
     else:
         raise SystemExit(f'× BROKEN  could not read {name}: HTTP {got.status_code} {got.text[:300]}')
     if not r.ok:
         raise SystemExit(f'× BROKEN  {action} failed: HTTP {r.status_code} {r.text[:500]}')
+    payload = r.json()
+    if 'done' in payload or str(payload.get('name', '')).find('/operations/') != -1:
+        _wait(s, payload)
+    check = s.get(f'{API}/{name}', timeout=30)
+    if not check.ok:
+        raise SystemExit(f'× BROKEN  agent {name} not readable after {action}: HTTP {check.status_code}')
     return action, name
 
 

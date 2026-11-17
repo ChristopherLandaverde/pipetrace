@@ -54,13 +54,17 @@ jobs:
         run: PIPETRACE_DEMO_PREFIX="$DEMO_PREFIX" bash scripts/run_walkthrough.sh "$GCP_PROJECT_ID" "$GCP_LOCATION"
       - name: Validate the agent's example SQL against the demo tables
         if: inputs.steps != 'crosscheck'
+        shell: bash
         run: |
-          .venv/bin/python scripts/data_agent.py --project "$GCP_PROJECT_ID" --dataset "${DEMO_PREFIX}_models" --dry-run \
-            | .venv/bin/python -c "import json,sys; [print(q['sqlQuery']) for q in json.load(sys.stdin)['dataAnalyticsAgent']['publishedContext']['exampleQueries']]" \
-            | while IFS= read -r sql; do
+          n=0
+          while IFS= read -r sql; do
                 bq query --project_id="$GCP_PROJECT_ID" --location="$GCP_LOCATION" --use_legacy_sql=false --dry_run "$sql" >/dev/null
                 echo "✓ example SQL valid: ${sql:0:70}…"
-              done
+                n=$((n+1))
+              done < <(.venv/bin/python scripts/data_agent.py --project "$GCP_PROJECT_ID" --dataset "${DEMO_PREFIX}_models" --dry-run \
+                | .venv/bin/python -c "import json,sys; [print(q['sqlQuery']) for q in json.load(sys.stdin)['dataAnalyticsAgent']['publishedContext']['exampleQueries']]")
+          [ "$n" -gt 0 ] || { echo "× BROKEN  no example SQL validated"; exit 1; }
+          echo "✓ VERIFIED  $n example queries valid"
       - name: Create or update the data agent
         if: inputs.steps == 'demo-and-agent'
         run: .venv/bin/python scripts/data_agent.py --project "$GCP_PROJECT_ID" --dataset "${DEMO_PREFIX}_models"

@@ -10,7 +10,8 @@ Usage:
       --start 2026-11-01 --end 2026-11-14 [--tolerance 0.05] [--min-sessions 20] [--show-counts]
 
 Uses Application Default Credentials with analytics.readonly and BigQuery read
-access. Read-only on both sides.
+access. Read-only on both sides. GA4 reports dates in the property's timezone;
+set PipeTrace's ga4_timezone to match, or day boundaries will drift.
 """
 import argparse
 import re
@@ -30,6 +31,11 @@ def compare(ga4, warehouse, tolerance=0.05, min_sessions=20):
     out = []
     for d in sorted(set(ga4) | set(warehouse)):
         g, w = ga4.get(d), warehouse.get(d)
+        # GA4's API omits zero-session days; treat a missing quiet day as 0.
+        if g is None and (w or 0) < min_sessions:
+            g = 0
+        if w is None and (g or 0) < min_sessions:
+            w = 0
         if g is None or w is None:
             out.append({'date': d, 'status': 'fail', 'drift': None, 'ga4': g, 'warehouse': w,
                         'reason': 'missing in ' + ('GA4' if g is None else 'warehouse')})
@@ -50,7 +56,7 @@ def ga4_sessions(property_id, start, end):
     creds, _ = google.auth.default(scopes=['https://www.googleapis.com/auth/analytics.readonly'])
     body = {'dateRanges': [{'startDate': start, 'endDate': end}],
             'dimensions': [{'name': 'date'}], 'metrics': [{'name': 'sessions'}], 'limit': 1000}
-    r = AuthorizedSession(creds).post(f'{DATA_API}/properties/{property_id}:runReport', json=body)
+    r = AuthorizedSession(creds).post(f'{DATA_API}/properties/{property_id}:runReport', json=body, timeout=60)
     if not r.ok:
         raise SystemExit(f'× BROKEN  GA4 Data API HTTP {r.status_code}: {r.text[:300]}')
     rows = r.json().get('rows', [])
@@ -84,8 +90,16 @@ def main(argv=None):
     a = p.parse_args(argv)
     if not re.fullmatch(r'\d{6,12}', a.property):
         p.error('Invalid GA4 property ID')
-    for d in (a.start, a.end):
-        date.fromisoformat(d)
+    if not re.fullmatch(r'[a-z][a-z0-9-]{4,61}[a-z0-9]', a.project):
+        p.error('Invalid project ID')
+    if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,1023}', a.dataset):
+        p.error('Invalid dataset ID')
+    try:
+        start, end = date.fromisoformat(a.start), date.fromisoformat(a.end)
+    except ValueError:
+        p.error('Dates must be YYYY-MM-DD')
+    if start > end:
+        p.error('--start must be on or before --end')
     results = compare(ga4_sessions(a.property, a.start, a.end),
                       warehouse_sessions(a.project, a.dataset, a.start, a.end),
                       a.tolerance, a.min_sessions)

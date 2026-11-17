@@ -74,6 +74,20 @@ class CrossCheck(unittest.TestCase):
         self.assertEqual([x['status'] for x in r], ['pass', 'fail'])
         self.assertIn('warehouse', r[1]['reason'])
 
+    def test_quiet_day_missing_from_ga4_is_not_a_failure(self):
+        r = ga4_crosscheck.compare({}, {self.D1: 2}, 0.05, 20)
+        self.assertEqual(r[0]['status'], 'skipped')
+
+    def test_rejects_unsafe_dataset_name(self):
+        with self.assertRaises(SystemExit):
+            ga4_crosscheck.main(['--property', '123456', '--project', 'demo-proj', '--dataset', 'x`; DROP',
+                                 '--start', '2026-11-01', '--end', '2026-11-02'])
+
+    def test_rejects_reversed_dates(self):
+        with self.assertRaises(SystemExit):
+            ga4_crosscheck.main(['--property', '123456', '--project', 'demo-proj', '--dataset', 'ok_ds',
+                                 '--start', '2026-11-05', '--end', '2026-11-02'])
+
     def test_small_days_are_skipped(self):
         self.assertEqual(ga4_crosscheck.compare({self.D3: 3}, {self.D3: 9}, 0.05, 20)[0]['status'], 'skipped')
 
