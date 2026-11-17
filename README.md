@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  12 dbt models on BigQuery · first-observed and linear credit that sums to 1 per opportunity · 45 of 45 checks pass on BigQuery in CI · read-only on GA4, HubSpot and Salesforce
+  12 dbt models on BigQuery · first-observed and linear credit that sums to 1 per opportunity · 45 of 45 dbt nodes pass on BigQuery in CI (12 models, 33 tests) · read-only on GA4, HubSpot and Salesforce
 </p>
 
 <p align="center">
