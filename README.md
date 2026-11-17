@@ -119,7 +119,7 @@ Run `dbt deps` in the consuming project and configure variables under `pipetrace
 | `fct_pipeline_attribution_daily` | Opportunity creation date + channel/currency/basis | Preferred BI and agent revenue surface |
 | `audit_ga4_unkeyed_events` | Export date + event name | Missing-identity coverage |
 
-See [architecture and decisions](docs/architecture.md), [metric definitions](docs/metrics.md), and [operations](docs/operations.md).
+See [architecture and decisions](docs/architecture.md), [metric definitions](docs/metrics.md), [operations](docs/operations.md), and [using PipeTrace with a data agent](docs/agents.md).
 
 ## Limits that affect interpretation
 
