@@ -43,6 +43,7 @@ def main():
     parser.add_argument('--prefix',default='foco_fixture')
     parser.add_argument('--location',default='US')
     parser.add_argument('--expiration-days',type=int,default=0,help='Set default_table_expiration_days on the fixture datasets (0 = none).')
+    parser.add_argument('--replace',action='store_true',help='Use CREATE OR REPLACE TABLE, for a stable demo dataset rebuilt in place.')
     parser.add_argument('--base-date',default='2026-01-01',help='Session day 0 (YYYY-MM-DD). Use a recent date in BigQuery sandbox projects, which drop partitions older than 60 days.')
     args=parser.parse_args()
     if not re.fullmatch(r'[a-z][a-z0-9-]{4,61}[a-z0-9]',args.project): parser.error('Invalid project ID')
@@ -54,6 +55,7 @@ def main():
     d=lambda n: (b+timedelta(days=n)).isoformat()
     ts=lambda n,hms: d(n)+'T'+hms
     sid=lambda n,hms: int(datetime.fromisoformat(ts(n,hms)).replace(tzinfo=timezone.utc).timestamp())
+    create='CREATE OR REPLACE TABLE' if args.replace else 'CREATE TABLE'
     datasets={k:f'{args.project}.{args.prefix}_{k}' for k in ['ga4','hubspot','salesforce']}
     print('-- SYNTHETIC DATA ONLY. Create-only fixture; reruns fail instead of overwriting tables.')
     for ds in datasets.values(): print(f'CREATE SCHEMA IF NOT EXISTS `{ds}` OPTIONS(location={literal(args.location)}'+(f', default_table_expiration_days={args.expiration_days}' if args.expiration_days else '')+');')
@@ -62,18 +64,18 @@ def main():
       d(1).replace('-',''):[event(ts(1,'00:01:00'),'u1',sid(0,'23:59:00'),engaged='1'),event(ts(1,'12:00:00'),'u2',sid(1,'12:00:00'),'conversion-2','cpc')],
     }
     for day,events in bydate.items():
-        print(f'CREATE TABLE `{datasets["ga4"]}.events_{day}` AS '+ '\nUNION ALL\n'.join(events)+';')
-    print(f'''CREATE TABLE `{datasets['hubspot']}.contacts` AS
+        print(f'{create} `{datasets["ga4"]}.events_{day}` AS '+ '\nUNION ALL\n'.join(events)+';')
+    print(f'''{create} `{datasets['hubspot']}.contacts` AS
 SELECT 'h1' AS id, 'synthetic@example.test' AS property_email, '{ts(0,'23:59:00')}Z' AS property_createdate,
 'EMAIL_MARKETING' AS property_hs_analytics_source, 'synthetic' AS property_hs_analytics_source_data_1,
 'conversion-1' AS property_original_conversion_id, 'QUALIFIED' AS property_hs_lead_status,
 'l1' AS property_salesforceleadid, 'c1' AS property_salesforcecontactid;''')
-    print(f'''CREATE TABLE `{datasets['salesforce']}.Lead` AS
+    print(f'''{create} `{datasets['salesforce']}.Lead` AS
 SELECT 'l1' AS Id, 'c1' AS ConvertedContactId, 'o1' AS ConvertedOpportunityId, TRUE AS IsConverted,
 'synthetic@example.test' AS Email, TIMESTAMP('{ts(0,'23:59:00')}Z') AS CreatedDate,
 'newsletter' AS First_Touch_Source__c, 'email' AS First_Touch_Medium__c, 'synthetic' AS First_Touch_Campaign__c,
 'conversion-1' AS Original_Conversion_Id__c, 'Converted' AS Status, FALSE AS IsDeleted;''')
-    print(f'''CREATE TABLE `{datasets['salesforce']}.Opportunity` AS
+    print(f'''{create} `{datasets['salesforce']}.Opportunity` AS
 SELECT 'o1' AS Id, 'a1' AS AccountId, 'c1' AS ContactId, 'Synthetic linked opportunity' AS Name,
 'Closed Won' AS StageName, 1200 AS Amount, 1000 AS ARR__c, 'USD' AS CurrencyIsoCode,
 TRUE AS IsWon, TRUE AS IsClosed, TIMESTAMP('{ts(9,'12:00:00')}Z') AS CreatedDate,

@@ -63,8 +63,27 @@ Language
 2. The question's dates fall inside the observation window. The default is the last 90 days (`ga4_lookback_days`). Deals whose sessions fall outside it show as Unattributed.
 3. `ga4_timezone` matches the GA4 property's timezone. A mismatch moves sessions across midnight.
 
-## Later: cross-checking GA4's own numbers
+## The live demo agent
 
-Google's GA4 Data API and its MCP server report sessions from GA4 itself. Comparing them with `fct_ga4_sessions_daily` for the same days can surface export or modeling drift. The two will never match exactly, because of thresholding and session counting differences, so compare against a tolerance. This needs a real GA4 property with consent; PipeTrace's CI project holds synthetic data only.
+`agents/pipetrace-pipeline-agent.json` defines the agent as code: the two tables, the instructions above, and three example queries. `scripts/data_agent.py` creates it or updates it in place through Google's Conversational Analytics API.
+
+The **Data agent and GA4 cross-check** workflow (Actions tab, run manually) does this in project `foco-revops-ci`:
+
+1. `demo` rebuilds the stable synthetic dataset `pipetrace_demo_models` and runs every example query through BigQuery's dry run, so broken SQL fails CI.
+2. `demo-and-agent` also creates or updates the data agent `pipetrace-pipeline`.
+
+The agent step needs one-time setup:
+- billing linked to the project, which data agents require;
+- the Gemini Data Analytics API and the Gemini for Google Cloud API enabled;
+- these roles on the CI service account: `roles/geminidataanalytics.dataAgentCreator`, `roles/geminidataanalytics.dataAgentStatelessUser` and `roles/datacatalog.catalogViewer`.
+
+## Cross-checking GA4's own numbers
+
+`scripts/ga4_crosscheck.py` compares GA4's Data API session counts per day with `fct_ga4_sessions_daily`. The two never match exactly, because of thresholding and session counting differences, so it flags days that drift beyond a tolerance (5% by default). It skips days where both sides have under 20 sessions. It prints percentages only, not traffic counts, because CI logs on a public repository are public. Pass `--show-counts` locally to see the counts.
+
+The `crosscheck` step of the workflow runs it. It needs:
+- a GA4 property with BigQuery export linked, plus PipeTrace's marts built from that export;
+- the CI service account added as Viewer on the GA4 property;
+- the Google Analytics Data API enabled on `foco-revops-ci`.
 
 Field notes on this problem ↗ [focosys.io](https://focosys.io)

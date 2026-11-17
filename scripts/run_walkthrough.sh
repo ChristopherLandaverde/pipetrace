@@ -7,7 +7,13 @@ set -euo pipefail
 
 PROJECT="${1:?usage: bash scripts/run_walkthrough.sh <dev-project-id> [location]}"
 LOCATION="${2:-US}"
-PREFIX="foco_fixture_$(date -u +%Y%m%d%H%M%S)"
+# PIPETRACE_DEMO_PREFIX builds a stable, persistent demo dataset in place
+# (for the BigQuery data agent); otherwise each run gets a fresh, expiring one.
+if [ -n "${PIPETRACE_DEMO_PREFIX:-}" ]; then
+  PREFIX="$PIPETRACE_DEMO_PREFIX"; EXPIRY_DAYS=0; GEN_EXTRA="--replace"
+else
+  PREFIX="foco_fixture_$(date -u +%Y%m%d%H%M%S)"; EXPIRY_DAYS=7; GEN_EXTRA=""
+fi
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
@@ -48,12 +54,14 @@ BASE_DATE="$(python3 -c 'import datetime as d; print(d.datetime.now(d.timezone.u
 END_DATE="$(python3 -c "import datetime as d; print(d.date.fromisoformat('$BASE_DATE')+d.timedelta(days=1))")"
 echo "↓ TRACED  fixture base date $BASE_DATE"
 echo "↓ TRACED  creating synthetic fixture datasets ${PREFIX}_{ga4,hubspot,salesforce}"
-python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" --expiration-days 7 > "logs/${PREFIX}.sql"
+python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" --expiration-days "$EXPIRY_DAYS" $GEN_EXTRA > "logs/${PREFIX}.sql"
 bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --maximum_bytes_billed="$MAX_BYTES" < "logs/${PREFIX}.sql" >/dev/null
 
 # Cleanup guard: every table and view in these datasets expires after 7 days,
 # set at dataset creation so it holds even if the run stops early.
-bq mk --project_id="$PROJECT" --location="$LOCATION" --dataset --default_table_expiration 604800 "${PROJECT}:${PREFIX}_models" >/dev/null
+if [ "$EXPIRY_DAYS" -gt 0 ]; then
+  bq mk --project_id="$PROJECT" --location="$LOCATION" --dataset --force --default_table_expiration $((EXPIRY_DAYS * 86400)) "${PROJECT}:${PREFIX}_models" >/dev/null
+fi
 
 .venv/bin/dbt deps
 .venv/bin/dbt debug --profiles-dir logs
@@ -67,5 +75,5 @@ if [ "$STATUS" -eq 0 ]; then
 else
   echo "× BROKEN  dbt build exited $STATUS; see $LOG"
 fi
-echo "Datasets created in $PROJECT: ${PREFIX}_ga4 ${PREFIX}_hubspot ${PREFIX}_salesforce ${PREFIX}_models (tables expire in 7 days)"
+echo "Datasets created in $PROJECT: ${PREFIX}_ga4 ${PREFIX}_hubspot ${PREFIX}_salesforce ${PREFIX}_models (tables expire in ${EXPIRY_DAYS} days; 0 = kept)"
 exit "$STATUS"

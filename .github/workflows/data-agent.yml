@@ -1,0 +1,77 @@
+name: Data agent and GA4 cross-check
+# Manual only. Builds the stable synthetic demo dataset, creates or updates the
+# BigQuery data agent over it, and optionally cross-checks a GA4 property.
+# Auth is the same Workload Identity Federation as the walkthrough.
+on:
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: What to run
+        type: choice
+        options: [demo, demo-and-agent, crosscheck]
+        default: demo
+      ga4_property:
+        description: GA4 property ID (crosscheck only)
+        required: false
+      ga4_dataset:
+        description: Dataset with PipeTrace marts built from that property's export (crosscheck only)
+        required: false
+      start:
+        description: Start date YYYY-MM-DD (crosscheck only)
+        required: false
+      end:
+        description: End date YYYY-MM-DD (crosscheck only)
+        required: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: data-agent
+  cancel-in-progress: false
+env:
+  GCP_PROJECT_ID: foco-revops-ci
+  GCP_LOCATION: US
+  GCP_SERVICE_ACCOUNT: foco-ci-walkthrough@foco-revops-ci.iam.gserviceaccount.com
+  GCP_WIF_PROVIDER: projects/449425147668/locations/global/workloadIdentityPools/github/providers/foco-revops-warehouse
+  DEMO_PREFIX: pipetrace_demo
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.GCP_WIF_PROVIDER }}
+          service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Build stable demo dataset
+        if: inputs.steps != 'crosscheck'
+        run: PIPETRACE_DEMO_PREFIX="$DEMO_PREFIX" bash scripts/run_walkthrough.sh "$GCP_PROJECT_ID" "$GCP_LOCATION"
+      - name: Validate the agent's example SQL against the demo tables
+        if: inputs.steps != 'crosscheck'
+        run: |
+          .venv/bin/python scripts/data_agent.py --project "$GCP_PROJECT_ID" --dataset "${DEMO_PREFIX}_models" --dry-run \
+            | .venv/bin/python -c "import json,sys; [print(q['sqlQuery']) for q in json.load(sys.stdin)['dataAnalyticsAgent']['publishedContext']['exampleQueries']]" \
+            | while IFS= read -r sql; do
+                bq query --project_id="$GCP_PROJECT_ID" --location="$GCP_LOCATION" --use_legacy_sql=false --dry_run "$sql" >/dev/null
+                echo "✓ example SQL valid: ${sql:0:70}…"
+              done
+      - name: Create or update the data agent
+        if: inputs.steps == 'demo-and-agent'
+        run: .venv/bin/python scripts/data_agent.py --project "$GCP_PROJECT_ID" --dataset "${DEMO_PREFIX}_models"
+      - name: GA4 cross-check (prints percentages only)
+        if: inputs.steps == 'crosscheck'
+        env:
+          GA4_PROPERTY: ${{ inputs.ga4_property }}
+          GA4_DATASET: ${{ inputs.ga4_dataset }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: |
+          python -m pip install -q -r requirements.txt
+          python scripts/ga4_crosscheck.py --property "$GA4_PROPERTY" --project "$GCP_PROJECT_ID" \
+            --dataset "$GA4_DATASET" --start "$START" --end "$END"

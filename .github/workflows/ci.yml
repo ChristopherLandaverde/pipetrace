@@ -16,6 +16,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python scripts/test_local.py
       - run: python scripts/check_repository.py
+      - run: python scripts/test_agents.py
       - run: python scripts/generate_fixture.py --project synthetic-demo > /tmp/fixture.sql
       - run: dbt deps
       - run: dbt parse --profiles-dir ci --no-partial-parse
