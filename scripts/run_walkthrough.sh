@@ -41,14 +41,19 @@ export DBT_BIGQUERY_PROJECT="$PROJECT"
 export DBT_BIGQUERY_DATASET="${PREFIX}_models"
 export DBT_BIGQUERY_LOCATION="$LOCATION"
 
+# BigQuery sandbox projects drop partitions older than 60 days, so the fixture
+# starts 12 days ago: sessions on day 0-1, opportunities created on day 9.
+BASE_DATE="$(python3 -c 'import datetime as d; print(d.date.today()-d.timedelta(days=12))')"
+END_DATE="$(python3 -c "import datetime as d; print(d.date.fromisoformat('$BASE_DATE')+d.timedelta(days=1))")"
+echo "↓ TRACED  fixture base date $BASE_DATE"
 echo "↓ TRACED  creating synthetic fixture datasets ${PREFIX}_{ga4,hubspot,salesforce}"
-python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" > "logs/${PREFIX}.sql"
+python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" > "logs/${PREFIX}.sql"
 bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --maximum_bytes_billed="$MAX_BYTES" < "logs/${PREFIX}.sql" >/dev/null
 
 .venv/bin/dbt deps
 .venv/bin/dbt debug --profiles-dir logs
 set +e
-.venv/bin/dbt build --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce, ga4_start_date: '2026-01-01', ga4_end_date: '2026-01-02', ga4_timezone: UTC, validate_fixture: true}"
+.venv/bin/dbt build --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce, ga4_start_date: '${BASE_DATE}', ga4_end_date: '${END_DATE}', ga4_timezone: UTC, fixture_base_date: '${BASE_DATE}', validate_fixture: true}"
 STATUS=$?
 set -e
 
