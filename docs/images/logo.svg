@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="t">
+  <title id="t">PipeTrace: three sessions traced into one pipeline line that ends at a verified total</title>
+  <!-- Focosys tokens, same family as OSRA and Rabbit: ink-primary tile, surface-paper sessions, state-verified total. -->
+  <rect width="256" height="256" rx="56" fill="#10231F"/>
+  <g fill="none" stroke="#F3F0E6" stroke-width="18" stroke-linecap="round">
+    <path d="M78 76 C 110 76, 118 128, 150 128" stroke-opacity="0.55"/>
+    <path d="M78 128 L 150 128" stroke-opacity="0.8"/>
+    <path d="M78 180 C 110 180, 118 128, 150 128"/>
+  </g>
+  <path d="M150 128 L 176 128" fill="none" stroke="#D7FF69" stroke-width="18" stroke-linecap="round"/>
+  <path d="M200 88 L 200 168" fill="none" stroke="#D7FF69" stroke-width="20" stroke-linecap="round"/>
+  <circle cx="62" cy="76" r="18" fill="#F3F0E6" fill-opacity="0.55"/>
+  <circle cx="62" cy="128" r="18" fill="#F3F0E6" fill-opacity="0.8"/>
+  <circle cx="62" cy="180" r="18" fill="#F3F0E6"/>
+</svg>

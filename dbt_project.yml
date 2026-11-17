@@ -1,4 +1,4 @@
-name: foco_revops_warehouse
+name: pipetrace
 version: 1.0.0
 config-version: 2
 require-dbt-version: [">=1.10.5", "<2.0.0"]
@@ -21,7 +21,7 @@ vars:
   attribution_lookback_days: 90
   lead_conversion_events: [generate_lead, form_submit, demo_request]
 models:
-  foco_revops_warehouse:
+  pipetrace:
     +persist_docs: {relation: true, columns: true}
     staging:
       +materialized: view
