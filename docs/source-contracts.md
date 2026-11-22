@@ -1,6 +1,18 @@
 # Source contracts
 
-Read-only source access is sufficient. This package never writes HubSpot, Salesforce, or GA4. Connector-specific mapping belongs in upstream views; source tables must expose these names and current snapshots.
+Read-only source access is sufficient. This package never writes HubSpot, Salesforce, or GA4. Source tables must expose these names and current snapshots.
+
+## Loaders
+
+Set `pipetrace_connector` to match how HubSpot and Salesforce reach BigQuery. PipeTrace then reads mapping views that reshape the loader's tables into the contract below.
+
+| `pipetrace_connector` | HubSpot table | Salesforce tables | Mapping |
+|---|---|---|---|
+| `native` (default) | `contacts` | `Lead`, `Opportunity` | None: tables already follow this contract |
+| `fivetran` | `contact` | `lead`, `opportunity` | Drops `_fivetran_deleted` rows; renames Salesforce snake_case columns (`Foo__c` → `foo_c`) back to API names |
+| `airbyte` | `contacts` | `Lead`, `Opportunity` | Unpacks the HubSpot `properties` JSON (or JSON string); drops `archived` rows. Salesforce streams already use API names |
+
+Override table names with `hubspot_contacts_table`, `sfdc_lead_table` and `sfdc_opportunity_table` (BigQuery table names are case-sensitive; some Airbyte destinations write `lead` and `opportunity`). History-mode or append-only tables (Fivetran `_fivetran_active`, Airbyte append streams) need a current-snapshot view first. Mappings are verified on synthetic tables in each loader's documented shape, not on a live connection.
 
 ## GA4
 

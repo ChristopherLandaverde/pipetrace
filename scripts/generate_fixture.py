@@ -37,6 +37,41 @@ def event(ts, user, sid, token=None, medium=None, engaged=None):
         'STRUCT(STRUCT('+literal('newsletter' if medium=='email' else 'google')+' AS source, '+'CAST('+literal(medium)+' AS STRING) AS medium, '+literal('synthetic')+' AS campaign_name) AS cross_channel_campaign) AS session_traffic_source_last_click'])
 
 
+def emit_connector_tables(connector, datasets, create):
+    """Copy the contract tables into the shape a loader writes, plus one deleted
+    or archived HubSpot row that the connector mapping must drop."""
+    hs, sf = datasets['hubspot'], datasets['salesforce']
+    if connector == 'fivetran':
+        print(f'''{create} `{hs}.contact` AS
+SELECT *, FALSE AS _fivetran_deleted FROM `{hs}.contacts_contract`
+UNION ALL
+SELECT * REPLACE ('h9' AS id), TRUE FROM `{hs}.contacts_contract` WHERE id = 'h1';''')
+        print(f'''{create} `{sf}.lead` AS
+SELECT Id AS id, ConvertedContactId AS converted_contact_id, ConvertedOpportunityId AS converted_opportunity_id,
+IsConverted AS is_converted, Email AS email, CreatedDate AS created_date,
+First_Touch_Source__c AS first_touch_source_c, First_Touch_Medium__c AS first_touch_medium_c,
+First_Touch_Campaign__c AS first_touch_campaign_c, Original_Conversion_Id__c AS original_conversion_id_c,
+Status AS status, IsDeleted AS is_deleted, GA_Client_ID__c AS ga_client_id_c, FALSE AS _fivetran_deleted
+FROM `{sf}.Lead_contract`;''')
+        print(f'''{create} `{sf}.opportunity` AS
+SELECT Id AS id, AccountId AS account_id, ContactId AS contact_id, Name AS name, StageName AS stage_name,
+Amount AS amount, ARR__c AS arr_c, CurrencyIsoCode AS currency_iso_code, IsWon AS is_won, IsClosed AS is_closed,
+CreatedDate AS created_date, CloseDate AS close_date, Original_Conversion_Id__c AS original_conversion_id_c,
+IsDeleted AS is_deleted, FALSE AS _fivetran_deleted
+FROM `{sf}.Opportunity_contract`;''')
+    elif connector == 'airbyte':
+        props = ('TO_JSON(STRUCT(property_email AS email, property_createdate AS createdate, '
+                 'property_hs_analytics_source AS hs_analytics_source, '
+                 'property_hs_analytics_source_data_1 AS hs_analytics_source_data_1, '
+                 'property_original_conversion_id AS original_conversion_id, property_hs_lead_status AS hs_lead_status, '
+                 'property_salesforceleadid AS salesforceleadid, property_salesforcecontactid AS salesforcecontactid, '
+                 'property_ga_client_id AS ga_client_id))')
+        print(f'''{create} `{hs}.contacts` AS
+SELECT id, TIMESTAMP(property_createdate) AS createdAt, {props} AS properties, FALSE AS archived FROM `{hs}.contacts_contract`
+UNION ALL
+SELECT 'h9', TIMESTAMP(property_createdate), {props}, TRUE FROM `{hs}.contacts_contract` WHERE id = 'h1';''')
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--project',required=True)
@@ -44,6 +79,7 @@ def main():
     parser.add_argument('--location',default='US')
     parser.add_argument('--expiration-days',type=int,default=0,help='Set default_table_expiration_days on the fixture datasets (0 = none).')
     parser.add_argument('--replace',action='store_true',help='Use CREATE OR REPLACE TABLE, for a stable demo dataset rebuilt in place.')
+    parser.add_argument('--connector',choices=['native','fivetran','airbyte'],default='native',help='Shape the HubSpot and Salesforce tables as this loader writes them.')
     parser.add_argument('--base-date',default='2026-01-01',help='Session day 0 (YYYY-MM-DD). Use a recent date in BigQuery sandbox projects, which drop partitions older than 60 days.')
     args=parser.parse_args()
     if not re.fullmatch(r'[a-z][a-z0-9-]{4,61}[a-z0-9]',args.project): parser.error('Invalid project ID')
@@ -68,7 +104,12 @@ def main():
     bydate[d(1).replace('-','')].append(event(ts(1,'15:00:00'),'u3',sid(1,'15:00:00'),medium='email'))
     for day,events in bydate.items():
         print(f'{create} `{datasets["ga4"]}.events_{day}` AS '+ '\nUNION ALL\n'.join(events)+';')
-    print(f'''{create} `{datasets['hubspot']}.contacts` AS
+    # For a loader shape, contract rows go to *_contract tables so only the
+    # loader-shaped tables carry the expected names: a broken mapping cannot
+    # silently read contract tables instead.
+    hubspot_table='contacts' if args.connector=='native' else 'contacts_contract'
+    lead_table, opp_table = ('Lead_contract', 'Opportunity_contract') if args.connector=='fivetran' else ('Lead', 'Opportunity')
+    print(f'''{create} `{datasets['hubspot']}.{hubspot_table}` AS
 SELECT 'h1' AS id, 'synthetic@example.test' AS property_email, '{ts(0,'23:59:00')}Z' AS property_createdate,
 'EMAIL_MARKETING' AS property_hs_analytics_source, 'synthetic' AS property_hs_analytics_source_data_1,
 'conversion-1' AS property_original_conversion_id, 'QUALIFIED' AS property_hs_lead_status,
@@ -78,7 +119,7 @@ UNION ALL
 -- Level 0: HubSpot's own original source, linked through Opportunity.ContactId.
 SELECT 'h5', 'synthetic5@example.test', '{ts(0,'09:00:00')}Z', 'PAID_SOCIAL', 'synthetic',
 CAST(NULL AS STRING), 'QUALIFIED', CAST(NULL AS STRING), 'c5', CAST(NULL AS STRING);''')
-    print(f'''{create} `{datasets['salesforce']}.Lead` AS
+    print(f'''{create} `{datasets['salesforce']}.{lead_table}` AS
 SELECT 'l1' AS Id, 'c1' AS ConvertedContactId, 'o1' AS ConvertedOpportunityId, TRUE AS IsConverted,
 'synthetic@example.test' AS Email, TIMESTAMP('{ts(0,'23:59:00')}Z') AS CreatedDate,
 'newsletter' AS First_Touch_Source__c, 'email' AS First_Touch_Medium__c, 'synthetic' AS First_Touch_Campaign__c,
@@ -92,7 +133,7 @@ UNION ALL
 -- Level 0: only the first-touch fields Salesforce recorded.
 SELECT 'l4', 'c4', 'o4', TRUE, 'synthetic4@example.test', TIMESTAMP('{ts(1,'09:00:00')}Z'),
 'google', 'organic', 'brand', CAST(NULL AS STRING), 'Converted', FALSE, CAST(NULL AS STRING);''')
-    print(f'''{create} `{datasets['salesforce']}.Opportunity` AS
+    print(f'''{create} `{datasets['salesforce']}.{opp_table}` AS
 SELECT 'o1' AS Id, 'a1' AS AccountId, 'c1' AS ContactId, 'Synthetic linked opportunity' AS Name,
 'Closed Won' AS StageName, 1200 AS Amount, 1000 AS ARR__c, 'USD' AS CurrencyIsoCode,
 TRUE AS IsWon, TRUE AS IsClosed, TIMESTAMP('{ts(9,'12:00:00')}Z') AS CreatedDate,
@@ -109,7 +150,9 @@ TIMESTAMP('{ts(9,'12:00:00')}Z'), DATE('{d(59)}'),NULL,FALSE
 UNION ALL
 SELECT 'o5','a5','c5','Synthetic HubSpot-source opportunity','Qualification',200,NULL,'USD',FALSE,FALSE,
 TIMESTAMP('{ts(9,'12:00:00')}Z'), DATE('{d(59)}'),NULL,FALSE;''')
+    emit_connector_tables(args.connector,datasets,create)
     variables={f'{k}_dataset':f'{args.prefix}_{k}' for k in datasets}
+    variables['pipetrace_connector']=args.connector
     variables.update(ga4_start_date=d(0),ga4_end_date=d(1),ga4_timezone='UTC',fixture_base_date=d(0))
     print('-- dbt build --vars '+json.dumps(variables))
 

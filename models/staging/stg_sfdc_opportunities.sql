@@ -1,6 +1,6 @@
 with raw as (
   select t.*, to_json_string(t) as row_json
-  from {{ source('salesforce', 'opportunities') }} as t
+  from {{ pipetrace_crm_relation('salesforce', 'opportunities') }} as t
 )
 select
   cast(Id as string) as opportunity_id,

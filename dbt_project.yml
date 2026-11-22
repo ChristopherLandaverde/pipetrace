@@ -20,6 +20,10 @@ vars:
   ga4_end_date: null
   attribution_lookback_days: 90
   lead_conversion_events: [generate_lead, form_submit, demo_request]
+  # Which loader produced the CRM tables: native (docs/source-contracts.md),
+  # fivetran or airbyte. Override table names with hubspot_contacts_table,
+  # sfdc_lead_table and sfdc_opportunity_table.
+  pipetrace_connector: native
   # Matching fields. Names are case-sensitive and may be absent: a missing
   # column reads as NULL, and that attribution level is simply not reached.
   ga4_conversion_token_param: original_conversion_id
