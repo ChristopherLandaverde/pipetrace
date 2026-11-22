@@ -77,8 +77,11 @@ Configure source dataset variables in `dbt_project.yml` or pass them to the comm
 
 ```bash
 dbt build --profiles-dir . --vars '{ga4_dataset: analytics_123456789, hubspot_dataset: hubspot_raw, salesforce_dataset: salesforce_raw, ga4_timezone: America/New_York}'
+dbt run-operation pipetrace_doctor --profiles-dir .
 dbt docs generate --profiles-dir .
 ```
+
+`pipetrace_doctor` prints the readiness check: how many deals reached each attribution level, how complete each matching field is, and whether CRM tokens and client IDs actually appear in GA4. The same rows are in the `pipetrace_readiness` table.
 
 The profile caps each job at 10 GB billed. Adjust deliberately for your data volume. Full table refreshes are intentional in v1: every build recomputes the configured observation window and current CRM snapshot. No incremental merge can leave stale allocations behind.
 

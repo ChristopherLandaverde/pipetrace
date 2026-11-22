@@ -85,3 +85,13 @@ models:
     description: Preferred BI/agent revenue surface. Allocated values by opportunity creation date, channel, attribution basis, currency, and revenue basis. Do not sum currencies together.
   - name: audit_ga4_unkeyed_events
     description: Events excluded from session modeling due to missing or invalid identifiers. Review consent and instrumentation before interpreting coverage.
+  - name: pipetrace_readiness
+    description: One row per readiness check. Deals reached at each attribution level, matching-field coverage, and whether CRM tokens and client IDs appear in GA4. Print with `dbt run-operation pipetrace_doctor`.
+    columns:
+      - name: check_name
+        data_tests: [unique, not_null]
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ok, low, missing, review, no_rows]
