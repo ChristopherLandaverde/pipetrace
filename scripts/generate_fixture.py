@@ -43,22 +43,22 @@ def emit_connector_tables(connector, datasets, create):
     hs, sf = datasets['hubspot'], datasets['salesforce']
     if connector == 'fivetran':
         print(f'''{create} `{hs}.contact` AS
-SELECT *, FALSE AS _fivetran_deleted FROM `{hs}.contacts`
+SELECT *, FALSE AS _fivetran_deleted FROM `{hs}.contacts_contract`
 UNION ALL
-SELECT * REPLACE ('h9' AS id), TRUE FROM `{hs}.contacts` WHERE id = 'h1';''')
+SELECT * REPLACE ('h9' AS id), TRUE FROM `{hs}.contacts_contract` WHERE id = 'h1';''')
         print(f'''{create} `{sf}.lead` AS
 SELECT Id AS id, ConvertedContactId AS converted_contact_id, ConvertedOpportunityId AS converted_opportunity_id,
 IsConverted AS is_converted, Email AS email, CreatedDate AS created_date,
 First_Touch_Source__c AS first_touch_source_c, First_Touch_Medium__c AS first_touch_medium_c,
 First_Touch_Campaign__c AS first_touch_campaign_c, Original_Conversion_Id__c AS original_conversion_id_c,
 Status AS status, IsDeleted AS is_deleted, GA_Client_ID__c AS ga_client_id_c, FALSE AS _fivetran_deleted
-FROM `{sf}.Lead`;''')
+FROM `{sf}.Lead_contract`;''')
         print(f'''{create} `{sf}.opportunity` AS
 SELECT Id AS id, AccountId AS account_id, ContactId AS contact_id, Name AS name, StageName AS stage_name,
 Amount AS amount, ARR__c AS arr_c, CurrencyIsoCode AS currency_iso_code, IsWon AS is_won, IsClosed AS is_closed,
 CreatedDate AS created_date, CloseDate AS close_date, Original_Conversion_Id__c AS original_conversion_id_c,
 IsDeleted AS is_deleted, FALSE AS _fivetran_deleted
-FROM `{sf}.Opportunity`;''')
+FROM `{sf}.Opportunity_contract`;''')
     elif connector == 'airbyte':
         props = ('TO_JSON(STRUCT(property_email AS email, property_createdate AS createdate, '
                  'property_hs_analytics_source AS hs_analytics_source, '
@@ -104,7 +104,11 @@ def main():
     bydate[d(1).replace('-','')].append(event(ts(1,'15:00:00'),'u3',sid(1,'15:00:00'),medium='email'))
     for day,events in bydate.items():
         print(f'{create} `{datasets["ga4"]}.events_{day}` AS '+ '\nUNION ALL\n'.join(events)+';')
-    hubspot_table='contacts_contract' if args.connector=='airbyte' else 'contacts'
+    # For a loader shape, contract rows go to *_contract tables so only the
+    # loader-shaped tables carry the expected names: a broken mapping cannot
+    # silently read contract tables instead.
+    hubspot_table='contacts' if args.connector=='native' else 'contacts_contract'
+    lead_table, opp_table = ('Lead_contract', 'Opportunity_contract') if args.connector=='fivetran' else ('Lead', 'Opportunity')
     print(f'''{create} `{datasets['hubspot']}.{hubspot_table}` AS
 SELECT 'h1' AS id, 'synthetic@example.test' AS property_email, '{ts(0,'23:59:00')}Z' AS property_createdate,
 'EMAIL_MARKETING' AS property_hs_analytics_source, 'synthetic' AS property_hs_analytics_source_data_1,
@@ -115,7 +119,7 @@ UNION ALL
 -- Level 0: HubSpot's own original source, linked through Opportunity.ContactId.
 SELECT 'h5', 'synthetic5@example.test', '{ts(0,'09:00:00')}Z', 'PAID_SOCIAL', 'synthetic',
 CAST(NULL AS STRING), 'QUALIFIED', CAST(NULL AS STRING), 'c5', CAST(NULL AS STRING);''')
-    print(f'''{create} `{datasets['salesforce']}.Lead` AS
+    print(f'''{create} `{datasets['salesforce']}.{lead_table}` AS
 SELECT 'l1' AS Id, 'c1' AS ConvertedContactId, 'o1' AS ConvertedOpportunityId, TRUE AS IsConverted,
 'synthetic@example.test' AS Email, TIMESTAMP('{ts(0,'23:59:00')}Z') AS CreatedDate,
 'newsletter' AS First_Touch_Source__c, 'email' AS First_Touch_Medium__c, 'synthetic' AS First_Touch_Campaign__c,
@@ -129,7 +133,7 @@ UNION ALL
 -- Level 0: only the first-touch fields Salesforce recorded.
 SELECT 'l4', 'c4', 'o4', TRUE, 'synthetic4@example.test', TIMESTAMP('{ts(1,'09:00:00')}Z'),
 'google', 'organic', 'brand', CAST(NULL AS STRING), 'Converted', FALSE, CAST(NULL AS STRING);''')
-    print(f'''{create} `{datasets['salesforce']}.Opportunity` AS
+    print(f'''{create} `{datasets['salesforce']}.{opp_table}` AS
 SELECT 'o1' AS Id, 'a1' AS AccountId, 'c1' AS ContactId, 'Synthetic linked opportunity' AS Name,
 'Closed Won' AS StageName, 1200 AS Amount, 1000 AS ARR__c, 'USD' AS CurrencyIsoCode,
 TRUE AS IsWon, TRUE AS IsClosed, TIMESTAMP('{ts(9,'12:00:00')}Z') AS CreatedDate,

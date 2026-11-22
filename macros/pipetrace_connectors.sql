@@ -41,13 +41,23 @@
              var('hubspot_conversion_token_property'), var('hubspot_ga_client_id_property')]) }}
 {%- endmacro %}
 
+{#- Custom and optional Salesforce fields a Fivetran mapping carries through.
+    Blank vars are skipped; names already mapped as standard columns, or
+    repeated in another case, are dropped (BigQuery columns ignore case). -#}
 {% macro pipetrace_sfdc_custom_fields(object_name) -%}
   {%- if object_name == 'lead' -%}
-    {{ return([var('sfdc_lead_first_touch_source_field'), var('sfdc_lead_first_touch_medium_field'),
-               var('sfdc_lead_first_touch_campaign_field'), var('sfdc_lead_conversion_token_field'),
-               var('sfdc_lead_ga_client_id_field')] | unique | list) }}
+    {%- set fields = [var('sfdc_lead_first_touch_source_field'), var('sfdc_lead_first_touch_medium_field'),
+                      var('sfdc_lead_first_touch_campaign_field'), var('sfdc_lead_conversion_token_field'),
+                      var('sfdc_lead_ga_client_id_field')] -%}
+    {%- set standard = ['id', 'convertedcontactid', 'convertedopportunityid', 'isconverted', 'email', 'createddate', 'status', 'isdeleted'] -%}
   {%- else -%}
-    {{ return(['ARR__c', 'ContactId', 'CurrencyIsoCode', var('sfdc_opportunity_conversion_token_field'),
-               var('sfdc_opportunity_ga_client_id_field')] | unique | list) }}
+    {%- set fields = ['ARR__c', 'ContactId', 'CurrencyIsoCode', var('sfdc_opportunity_conversion_token_field'),
+                      var('sfdc_opportunity_ga_client_id_field')] -%}
+    {%- set standard = ['id', 'accountid', 'name', 'stagename', 'amount', 'iswon', 'isclosed', 'createddate', 'closedate', 'isdeleted'] -%}
   {%- endif -%}
+  {%- set ns = namespace(out=[], seen=standard) -%}
+  {%- for f in fields if f and (f | lower) not in ns.seen -%}
+    {%- set ns.out = ns.out + [f] -%}{%- set ns.seen = ns.seen + [f | lower] -%}
+  {%- endfor -%}
+  {{ return(ns.out) }}
 {%- endmacro %}

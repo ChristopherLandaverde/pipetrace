@@ -17,7 +17,7 @@ fi
 # PIPETRACE_CONNECTOR shapes the CRM fixture as native, fivetran or airbyte tables.
 CONNECTOR="${PIPETRACE_CONNECTOR:-native}"
 case "$CONNECTOR" in native|fivetran|airbyte) ;; *) echo "× BROKEN  PIPETRACE_CONNECTOR must be native, fivetran or airbyte"; exit 1;; esac
-[ "$CONNECTOR" = native ] || [ -n "${PIPETRACE_DEMO_PREFIX:-}" ] || PREFIX="${PREFIX}_${CONNECTOR}"
+[ "$CONNECTOR" = native ] || PREFIX="${PREFIX}_${CONNECTOR}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
