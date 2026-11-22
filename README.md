@@ -15,7 +15,7 @@
 <p align="center">
   <a href="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/ci.yml"><img src="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/ci.yml/badge.svg?branch=main" alt="Validate package"></a>
   <a href="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/walkthrough.yml"><img src="https://github.com/ChristopherLandaverde/pipetrace/actions/workflows/walkthrough.yml/badge.svg?branch=main" alt="Native BigQuery walkthrough"></a>
-  <a href="requirements.txt"><img src="https://img.shields.io/badge/dbt-1.10-10231F" alt="dbt Core 1.10"></a>
+  <a href="requirements.txt"><img src="https://img.shields.io/badge/dbt-1.12-10231F" alt="dbt Core 1.12"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-10231F" alt="License: MIT"></a>
 </p>
 
@@ -56,7 +56,7 @@ See the [validation record](VALIDATION.md) for what has run and what has not.
 
 ## Quickstart
 
-Requires Python 3.10+, dbt Core 1.10.5–1.10.x, a BigQuery development project, and Application Default Credentials. All source and output datasets must share a BigQuery location.
+Requires Python 3.10+, dbt Core 1.12 (tested; the package declares >=1.10.5), a BigQuery development project, and Application Default Credentials. All source and output datasets must share a BigQuery location.
 
 ```bash
 python3 -m venv .venv
