@@ -8,5 +8,5 @@ select opp_created_date, channel_grouping, attribution_basis, currency_code, rev
   sum(linear_won_value) as linear_won_value,
   sum(first_touch_arr) as first_touch_arr,
   sum(linear_arr) as linear_arr
-from {{ ref('fct_revops_pipeline_attribution') }}
+from {{ ref('pipetrace_fct_revops_pipeline_attribution') }}
 group by 1, 2, 3, 4, 5

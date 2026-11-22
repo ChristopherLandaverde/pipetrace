@@ -29,9 +29,9 @@ def main():
     for p in (ROOT/'scripts').glob('*.py'):
         try: ast.parse(p.read_text(), filename=p.name)
         except SyntaxError as exc: errors.append(str(exc))
-    for name in ['stg_ga4_events','stg_hubspot_contacts','stg_sfdc_leads','stg_sfdc_opportunities','int_ga4_sessions','int_crm_touchpoint_linkage','fct_ga4_sessions_daily','dim_touchpoints','fct_revops_pipeline_attribution']:
+    for name in ['pipetrace_stg_ga4_events','pipetrace_stg_hubspot_contacts','pipetrace_stg_sfdc_leads','pipetrace_stg_sfdc_opportunities','pipetrace_int_ga4_sessions','pipetrace_int_crm_touchpoint_linkage','pipetrace_fct_ga4_sessions_daily','pipetrace_dim_touchpoints','pipetrace_fct_revops_pipeline_attribution']:
         if name not in models: errors.append('Missing PDF model '+name)
-    for name in ['extract_event_param','generate_session_key']:
+    for name in ['pipetrace_extract_event_param','pipetrace_generate_session_key']:
         if not (ROOT/'macros'/f'{name}.sql').exists(): errors.append('Missing PDF macro '+name)
     for p in ROOT.rglob('*'):
         if not p.is_file() or '.git' in p.parts or '__pycache__' in p.parts: continue

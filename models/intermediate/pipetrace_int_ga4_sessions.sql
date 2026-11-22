@@ -13,7 +13,7 @@ with attributed_events as (
         struct(5, utm_source, utm_medium, utm_campaign, 'collected_fallback')
       else struct(6, cast(null as string), cast(null as string), cast(null as string), 'direct_fallback')
     end as attribution
-  from {{ ref('stg_ga4_events') }}
+  from {{ ref('pipetrace_stg_ga4_events') }}
   where session_key is not null
     -- GA4 IDs are Unix seconds. Bound before timestamp conversion to avoid overflow.
     and ga_session_id between 0 and 253402300799
@@ -42,7 +42,7 @@ with attributed_events as (
     attribution.campaign as session_campaign,
     attribution.method as attribution_method
   from aggregated
-  where session_date between {{ ga4_start_date() }} and {{ ga4_end_date() }}
+  where session_date between {{ pipetrace_ga4_start_date() }} and {{ pipetrace_ga4_end_date() }}
 )
 select *,
   {{ pipetrace_channel_grouping('session_source', 'session_medium') }} as session_default_channel_grouping

@@ -13,7 +13,7 @@
 | first_touch_won_value / linear_won_value | Allocated pipeline value where current is_won is true | Opportunity creation cohort; not close-date bookings |
 | first_touch_arr / linear_arr | Allocated explicit ARR__c | Excludes null ARR; never substitute Amount |
 
-`opp_pipeline_value` and `opp_arr` repeat on every touchpoint row. They are reconciliation context, not additive measures. Prefer `fct_pipeline_attribution_daily` for conversational agents and Looker Studio. Retain `currency_code` and `revenue_basis` in every monetary grouping.
+`opp_pipeline_value` and `opp_arr` repeat on every touchpoint row. They are reconciliation context, not additive measures. Prefer `pipetrace_fct_pipeline_attribution_daily` for conversational agents and Looker Studio. Retain `currency_code` and `revenue_basis` in every monetary grouping.
 
 Unknown amounts stay null in the detail bridge. SUM ignores nulls, so an all-unknown group returns null and a mixed group represents only known value. Check opportunity completeness against staging before making financial decisions.
 
@@ -21,4 +21,4 @@ First-observed attribution does not claim a complete acquisition journey. Missin
 
 The channel grouping is intentionally a small transparent rule set. Exported source/medium are retained so consumers can implement an organization-specific taxonomy without rewriting session identity.
 
-Example safe agent instruction: "Query fct_pipeline_attribution_daily, filter opportunity creation dates, retain currency_code and revenue_basis, and sum linear_pipeline_value. State the observation window and Unattributed share. Do not query raw GA4 or sum opp_pipeline_value from the bridge."
+Example safe agent instruction: "Query pipetrace_fct_pipeline_attribution_daily, filter opportunity creation dates, retain currency_code and revenue_basis, and sum linear_pipeline_value. State the observation window and Unattributed share. Do not query raw GA4 or sum opp_pipeline_value from the bridge."

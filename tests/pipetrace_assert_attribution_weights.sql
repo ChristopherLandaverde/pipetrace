@@ -1,5 +1,5 @@
 select opportunity_id
-from {{ ref('fct_revops_pipeline_attribution') }}
+from {{ ref('pipetrace_fct_revops_pipeline_attribution') }}
 group by opportunity_id
 having abs(sum(first_touch_weight) - 1) > 0.000000001
     or abs(sum(linear_touch_weight) - 1) > 0.000000001

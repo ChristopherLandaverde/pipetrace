@@ -8,5 +8,5 @@ with cases as (
   select [struct('token', struct(cast(null as string), cast(null as int64), 4.5, cast(null as float64)))], '4.5', null
 )
 select * from cases
-where {{ extract_event_param('token') }} is distinct from expected_string
-   or {{ extract_event_param('token', 'int') }} is distinct from expected_int
+where {{ pipetrace_extract_event_param('token') }} is distinct from expected_string
+   or {{ pipetrace_extract_event_param('token', 'int') }} is distinct from expected_int

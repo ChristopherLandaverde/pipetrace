@@ -12,7 +12,7 @@
 - Add Python standard-library relational acceptance tests because local package downloads are blocked. These execute actual CRM/attribution SQL with narrowly documented dialect substitutions; native BigQuery tests remain mandatory.
 - Treat the README's Readable Layer as governed SQL tables, not an implicitly deployed dbt Semantic Layer service.
 - 2026-11-17: Imported the supplied archive as the initial commit on the empty `main` branch at Christopher's request. Later changes go to `build/*` branches as draft PRs.
-- 2026-11-17: Vendored dbt_utils 1.3.0 from its GitHub tag into the git-ignored `dbt_packages/` for the local parse only, because dbt Hub is blocked here. `packages.yml` is unchanged; CI resolves from Hub.
+- 2026-11-17: Vendored dbt_utils 1.3.0 from its GitHub tag into the git-ignored `dbt_packages/` for the local parse only, because dbt Hub is blocked here. `packages.yml` is unchanged; CI resolves from Hub. (2026-11-22: packages.yml now accepts dbt_utils >=1.0.0,<2.0.0; CI resolved 1.4.1.)
 - 2026-11-17: Kept dbt-core pinned to 1.10.x even though dbt reports that line deprecated. An upgrade is a dependency change outside the approved stack and needs its own parse and native run.
 - 2026-11-17: Rewrote the README opening as a foco-brand trace with resource counts. The repository stays private; making it public is Christopher's decision. (2026-11-22: Christopher made it public.)
 - 2026-11-17: Created GCP project `foco-revops-ci` (org focosys.io) for CI only, with no billing account, so BigQuery runs in the free sandbox. The service account `foco-ci-walkthrough` holds only BigQuery Job User and Data Editor on that project.
@@ -35,3 +35,5 @@
 - 2026-11-22: Upgraded the tested toolchain to dbt-core 1.12.x / dbt-bigquery 1.12.x (latest at the time; 1.10 is deprecated). require-dbt-version stays >=1.10.5 so older consumers can still install the package. Parse is clean with no deprecation warnings.
 - 2026-11-22: Walkthrough skips pull requests from forks (no OIDC token there) instead of failing; CONTRIBUTING says a maintainer runs it before merge. Branch protection could not be read from the agent token; none blocked earlier merges, so the renamed matrix checks need no settings change today.
 - 2026-11-22: Released v1.0.0 as a Git tag and GitHub release. dbt Hub listing prepared in HANDOFF, not submitted.
+- 2026-11-22: Prefixed every model, singular test and generic-named macro with `pipetrace_` before the first tag, following the dbt Hub best-practice checklist (names like `stg_hubspot_contacts` clash in installing projects). No external consumers yet, so nothing breaks. dbt_utils widened from exactly 1.3.0 to `>=1.0.0,<2.0.0`.
+- 2026-11-22: dbt Hub request not opened: its form requires production use, and PipeTrace has only run on synthetic data. Revisit after the first real deployment and the v1.0.0 tag.

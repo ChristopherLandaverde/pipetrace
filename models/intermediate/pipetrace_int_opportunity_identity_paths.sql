@@ -3,11 +3,11 @@
 -- source the CRM itself recorded. Paths are ranked; lower priority wins.
 -- Joins use record IDs only, never email.
 with leads as (
-  select * from {{ ref('stg_sfdc_leads') }}
+  select * from {{ ref('pipetrace_stg_sfdc_leads') }}
 ), contacts as (
-  select * from {{ ref('stg_hubspot_contacts') }}
+  select * from {{ ref('pipetrace_stg_hubspot_contacts') }}
 ), opportunities as (
-  select * from {{ ref('stg_sfdc_opportunities') }}
+  select * from {{ ref('pipetrace_stg_sfdc_opportunities') }}
 ), paths as (
   select o.opportunity_id, 'opportunity_record' as match_method, 1 as match_priority,
     o.original_conversion_id as conversion_token, o.ga_client_id,

@@ -189,7 +189,7 @@ After a test submission, the next export and a rebuild:
 
 - `GA4 sessions carrying a conversion token` rises above 0.
 - `CRM conversion tokens that appear in GA4` stays near 100%. A low share means the event fired without the parameter, or the form and the event used different tokens.
-- `assert_conversion_tokens_not_shared_across_users` passes. A token shared by two browsers fails the build, because it would credit one deal to two people.
+- `pipetrace_assert_conversion_tokens_not_shared_across_users` passes. A token shared by two browsers fails the build, because it would credit one deal to two people.
 
 Limits: GA4 only exports events, client IDs and session IDs it was allowed to collect. When analytics consent is denied, the token reaches the CRM but not GA4, and the deal falls to a lower level.
 

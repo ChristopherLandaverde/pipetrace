@@ -5,22 +5,22 @@
 {% set guide = 'docs/setup-guide.md' %}
 with opps as (
   select attribution_basis, count(distinct opportunity_id) as opportunities
-  from {{ ref('fct_revops_pipeline_attribution') }}
+  from {{ ref('pipetrace_fct_revops_pipeline_attribution') }}
   group by 1
 ), opp_total as (
-  select count(*) as n from {{ ref('stg_sfdc_opportunities') }}
+  select count(*) as n from {{ ref('pipetrace_stg_sfdc_opportunities') }}
 ), crm_tokens as (
-  select original_conversion_id as token from {{ ref('stg_hubspot_contacts') }} where original_conversion_id is not null
+  select original_conversion_id as token from {{ ref('pipetrace_stg_hubspot_contacts') }} where original_conversion_id is not null
   union distinct
-  select original_conversion_id from {{ ref('stg_sfdc_leads') }} where original_conversion_id is not null
+  select original_conversion_id from {{ ref('pipetrace_stg_sfdc_leads') }} where original_conversion_id is not null
   union distinct
-  select original_conversion_id from {{ ref('stg_sfdc_opportunities') }} where original_conversion_id is not null
+  select original_conversion_id from {{ ref('pipetrace_stg_sfdc_opportunities') }} where original_conversion_id is not null
 ), crm_client_ids as (
-  select ga_client_id as client_id from {{ ref('stg_hubspot_contacts') }} where ga_client_id is not null
+  select ga_client_id as client_id from {{ ref('pipetrace_stg_hubspot_contacts') }} where ga_client_id is not null
   union distinct
-  select ga_client_id from {{ ref('stg_sfdc_leads') }} where ga_client_id is not null
+  select ga_client_id from {{ ref('pipetrace_stg_sfdc_leads') }} where ga_client_id is not null
   union distinct
-  select ga_client_id from {{ ref('stg_sfdc_opportunities') }} where ga_client_id is not null
+  select ga_client_id from {{ ref('pipetrace_stg_sfdc_opportunities') }} where ga_client_id is not null
 ), checks as (
   -- Attribution levels reached
   select 1 as check_order, 'level' as area, 'level_2_conversion_token' as check_name,
@@ -43,55 +43,55 @@ with opps as (
   -- GA4
   union all
   select 10, 'ga4', 'ga4_sessions_in_window', 'GA4 sessions found in the observation window',
-    (select count(*) from {{ ref('int_ga4_sessions') }}), cast(null as int64), '{{ guide }}#before-you-start'
+    (select count(*) from {{ ref('pipetrace_int_ga4_sessions') }}), cast(null as int64), '{{ guide }}#before-you-start'
   union all
   select 11, 'ga4', 'ga4_sessions_with_token', 'GA4 sessions carrying a conversion token',
-    (select count(distinct session_key) from {{ ref('int_session_conversion_tokens') }}),
-    (select count(*) from {{ ref('int_ga4_sessions') }}), '{{ guide }}#level-2-conversion-token'
+    (select count(distinct session_key) from {{ ref('pipetrace_int_session_conversion_tokens') }}),
+    (select count(*) from {{ ref('pipetrace_int_ga4_sessions') }}), '{{ guide }}#level-2-conversion-token'
   -- HubSpot
   union all
   select 20, 'hubspot', 'hubspot_contacts_with_token', 'HubSpot contacts with a conversion token ({{ var("hubspot_conversion_token_property") }})',
-    (select countif(original_conversion_id is not null) from {{ ref('stg_hubspot_contacts') }}),
-    (select count(*) from {{ ref('stg_hubspot_contacts') }}), '{{ guide }}#level-2-conversion-token'
+    (select countif(original_conversion_id is not null) from {{ ref('pipetrace_stg_hubspot_contacts') }}),
+    (select count(*) from {{ ref('pipetrace_stg_hubspot_contacts') }}), '{{ guide }}#level-2-conversion-token'
   union all
   select 21, 'hubspot', 'hubspot_contacts_with_ga_client_id', 'HubSpot contacts with a GA4 client ID ({{ var("hubspot_ga_client_id_property") }})',
-    (select countif(ga_client_id is not null) from {{ ref('stg_hubspot_contacts') }}),
-    (select count(*) from {{ ref('stg_hubspot_contacts') }}), '{{ guide }}#level-1-ga4-client-id'
+    (select countif(ga_client_id is not null) from {{ ref('pipetrace_stg_hubspot_contacts') }}),
+    (select count(*) from {{ ref('pipetrace_stg_hubspot_contacts') }}), '{{ guide }}#level-1-ga4-client-id'
   union all
   select 22, 'hubspot', 'hubspot_contacts_with_original_source', 'HubSpot contacts with an original source',
-    (select countif(original_source is not null) from {{ ref('stg_hubspot_contacts') }}),
-    (select count(*) from {{ ref('stg_hubspot_contacts') }}), '{{ guide }}#level-0-crm-source'
+    (select countif(original_source is not null) from {{ ref('pipetrace_stg_hubspot_contacts') }}),
+    (select count(*) from {{ ref('pipetrace_stg_hubspot_contacts') }}), '{{ guide }}#level-0-crm-source'
   union all
   select 23, 'hubspot', 'hubspot_contacts_linked_to_salesforce', 'HubSpot contacts with a Salesforce lead or contact ID',
-    (select countif(sfdc_lead_id is not null or sfdc_contact_id is not null) from {{ ref('stg_hubspot_contacts') }}),
-    (select count(*) from {{ ref('stg_hubspot_contacts') }}), '{{ guide }}#before-you-start'
+    (select countif(sfdc_lead_id is not null or sfdc_contact_id is not null) from {{ ref('pipetrace_stg_hubspot_contacts') }}),
+    (select count(*) from {{ ref('pipetrace_stg_hubspot_contacts') }}), '{{ guide }}#before-you-start'
   -- Salesforce
   union all
   select 30, 'salesforce', 'sfdc_leads_with_token', 'Salesforce leads with a conversion token ({{ var("sfdc_lead_conversion_token_field") }})',
-    (select countif(original_conversion_id is not null) from {{ ref('stg_sfdc_leads') }}),
-    (select count(*) from {{ ref('stg_sfdc_leads') }}), '{{ guide }}#level-2-conversion-token'
+    (select countif(original_conversion_id is not null) from {{ ref('pipetrace_stg_sfdc_leads') }}),
+    (select count(*) from {{ ref('pipetrace_stg_sfdc_leads') }}), '{{ guide }}#level-2-conversion-token'
   union all
   select 31, 'salesforce', 'sfdc_leads_with_ga_client_id', 'Salesforce leads with a GA4 client ID ({{ var("sfdc_lead_ga_client_id_field") }})',
-    (select countif(ga_client_id is not null) from {{ ref('stg_sfdc_leads') }}),
-    (select count(*) from {{ ref('stg_sfdc_leads') }}), '{{ guide }}#level-1-ga4-client-id'
+    (select countif(ga_client_id is not null) from {{ ref('pipetrace_stg_sfdc_leads') }}),
+    (select count(*) from {{ ref('pipetrace_stg_sfdc_leads') }}), '{{ guide }}#level-1-ga4-client-id'
   union all
   select 32, 'salesforce', 'sfdc_leads_with_first_touch', 'Salesforce leads with first-touch source or medium',
-    (select countif(ft_source is not null or ft_medium is not null) from {{ ref('stg_sfdc_leads') }}),
-    (select count(*) from {{ ref('stg_sfdc_leads') }}), '{{ guide }}#level-0-crm-source'
+    (select countif(ft_source is not null or ft_medium is not null) from {{ ref('pipetrace_stg_sfdc_leads') }}),
+    (select count(*) from {{ ref('pipetrace_stg_sfdc_leads') }}), '{{ guide }}#level-0-crm-source'
   union all
   select 33, 'salesforce', 'sfdc_opportunities_with_token', 'Opportunities with a conversion token ({{ var("sfdc_opportunity_conversion_token_field") }})',
-    (select countif(original_conversion_id is not null) from {{ ref('stg_sfdc_opportunities') }}),
+    (select countif(original_conversion_id is not null) from {{ ref('pipetrace_stg_sfdc_opportunities') }}),
     (select n from opp_total), '{{ guide }}#level-2-conversion-token'
   -- Do CRM values actually match GA4? Catches format mismatches.
   union all
   select 40, 'match', 'crm_tokens_found_in_ga4', 'CRM conversion tokens that appear in GA4',
     (select count(*) from crm_tokens c where exists (
-      select 1 from {{ ref('int_session_conversion_tokens') }} t where t.original_conversion_id = c.token)),
+      select 1 from {{ ref('pipetrace_int_session_conversion_tokens') }} t where t.original_conversion_id = c.token)),
     (select count(*) from crm_tokens), '{{ guide }}#level-2-conversion-token'
   union all
   select 41, 'match', 'crm_client_ids_found_in_ga4', 'CRM GA4 client IDs that appear in GA4 as user_pseudo_id',
     (select count(*) from crm_client_ids c where exists (
-      select 1 from {{ ref('int_ga4_sessions') }} s where s.user_pseudo_id = c.client_id)),
+      select 1 from {{ ref('pipetrace_int_ga4_sessions') }} s where s.user_pseudo_id = c.client_id)),
     (select count(*) from crm_client_ids), '{{ guide }}#level-1-ga4-client-id'
 )
 select check_order, area, check_name, description, numerator, denominator,

@@ -3,26 +3,26 @@
   "displayName": "PipeTrace pipeline agent",
   "description": "Answers pipeline and traffic questions from PipeTrace's governed marts. Synthetic demo data unless pointed at a real dataset. Read-only.",
   "tables": [
-    "fct_pipeline_attribution_daily",
-    "fct_ga4_sessions_daily"
+    "pipetrace_fct_pipeline_attribution_daily",
+    "pipetrace_fct_ga4_sessions_daily"
   ],
-  "systemInstruction": "You answer marketing pipeline and traffic questions from two BigQuery tables:\nfct_pipeline_attribution_daily and fct_ga4_sessions_daily. Query nothing else.\n\nRevenue\n- Group every monetary sum by currency_code and revenue_basis. Never add\n  different currencies or ARR and Amount together.\n- Use linear_pipeline_value by default. Use first_touch_pipeline_value only when\n  asked for first touch.\n- Name the model in every answer: \"linear attribution\" or \"first-observed\n  attribution\". State the date range, which is the opportunity creation date.\n- Report the Unattributed share next to channel totals. Unattributed means no\n  deterministic web match was found; it does not mean Direct.\n- attribution_basis says how each deal was credited: conversion_token or\n  ga_client_id (traced to GA4 sessions) or crm_source (the CRM's own recorded\n  source, no session). Report the crm_source share separately when it is not 0.\n- won_value columns are filtered on the opportunity's current won status, by\n  creation cohort. They are not bookings by close date.\n- ARR columns exclude deals with no ARR. Never substitute Amount for ARR.\n\nTraffic\n- total_sessions, engaged_sessions and lead_conversion_sessions can be summed.\n- unique_visitors cannot be summed across rows or dates. Say so if asked.\n\nLanguage\n- Describe attribution as association under a named model and window, never as\n  causation.\n- If a question needs a table you don't have, say so instead of guessing.",
+  "systemInstruction": "You answer marketing pipeline and traffic questions from two BigQuery tables:\npipetrace_fct_pipeline_attribution_daily and pipetrace_fct_ga4_sessions_daily. Query nothing else.\n\nRevenue\n- Group every monetary sum by currency_code and revenue_basis. Never add\n  different currencies or ARR and Amount together.\n- Use linear_pipeline_value by default. Use first_touch_pipeline_value only when\n  asked for first touch.\n- Name the model in every answer: \"linear attribution\" or \"first-observed\n  attribution\". State the date range, which is the opportunity creation date.\n- Report the Unattributed share next to channel totals. Unattributed means no\n  deterministic web match was found; it does not mean Direct.\n- attribution_basis says how each deal was credited: conversion_token or\n  ga_client_id (traced to GA4 sessions) or crm_source (the CRM's own recorded\n  source, no session). Report the crm_source share separately when it is not 0.\n- won_value columns are filtered on the opportunity's current won status, by\n  creation cohort. They are not bookings by close date.\n- ARR columns exclude deals with no ARR. Never substitute Amount for ARR.\n\nTraffic\n- total_sessions, engaged_sessions and lead_conversion_sessions can be summed.\n- unique_visitors cannot be summed across rows or dates. Say so if asked.\n\nLanguage\n- Describe attribution as association under a named model and window, never as\n  causation.\n- If a question needs a table you don't have, say so instead of guessing.",
   "exampleQueries": [
     {
       "naturalLanguageQuestion": "Which channel sourced the most linear pipeline value, by currency and revenue basis?",
-      "sqlQuery": "SELECT channel_grouping, currency_code, revenue_basis, SUM(linear_pipeline_value) AS linear_pipeline_value FROM `{project}.{dataset}.fct_pipeline_attribution_daily` GROUP BY 1, 2, 3 ORDER BY linear_pipeline_value DESC"
+      "sqlQuery": "SELECT channel_grouping, currency_code, revenue_basis, SUM(linear_pipeline_value) AS linear_pipeline_value FROM `{project}.{dataset}.pipetrace_fct_pipeline_attribution_daily` GROUP BY 1, 2, 3 ORDER BY linear_pipeline_value DESC"
     },
     {
       "naturalLanguageQuestion": "What share of linear pipeline value is Unattributed?",
-      "sqlQuery": "SELECT currency_code, revenue_basis, SAFE_DIVIDE(SUM(IF(channel_grouping = 'Unattributed', linear_pipeline_value, 0)), SUM(linear_pipeline_value)) AS unattributed_share FROM `{project}.{dataset}.fct_pipeline_attribution_daily` GROUP BY 1, 2"
+      "sqlQuery": "SELECT currency_code, revenue_basis, SAFE_DIVIDE(SUM(IF(channel_grouping = 'Unattributed', linear_pipeline_value, 0)), SUM(linear_pipeline_value)) AS unattributed_share FROM `{project}.{dataset}.pipetrace_fct_pipeline_attribution_daily` GROUP BY 1, 2"
     },
     {
       "naturalLanguageQuestion": "How many sessions and engaged sessions did each channel get?",
-      "sqlQuery": "SELECT session_default_channel_grouping, SUM(total_sessions) AS total_sessions, SUM(engaged_sessions) AS engaged_sessions FROM `{project}.{dataset}.fct_ga4_sessions_daily` GROUP BY 1 ORDER BY total_sessions DESC"
+      "sqlQuery": "SELECT session_default_channel_grouping, SUM(total_sessions) AS total_sessions, SUM(engaged_sessions) AS engaged_sessions FROM `{project}.{dataset}.pipetrace_fct_ga4_sessions_daily` GROUP BY 1 ORDER BY total_sessions DESC"
     },
     {
       "naturalLanguageQuestion": "How much linear pipeline value was credited at each attribution level?",
-      "sqlQuery": "SELECT attribution_basis, currency_code, revenue_basis, SUM(linear_pipeline_value) AS linear_pipeline_value FROM `{project}.{dataset}.fct_pipeline_attribution_daily` GROUP BY 1, 2, 3 ORDER BY 1"
+      "sqlQuery": "SELECT attribution_basis, currency_code, revenue_basis, SUM(linear_pipeline_value) AS linear_pipeline_value FROM `{project}.{dataset}.pipetrace_fct_pipeline_attribution_daily` GROUP BY 1, 2, 3 ORDER BY 1"
     }
   ]
 }
