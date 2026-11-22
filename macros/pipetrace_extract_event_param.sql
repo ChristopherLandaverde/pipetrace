@@ -1,6 +1,6 @@
-{% macro extract_event_param(param_key, data_type='string', params='event_params') -%}
+{% macro pipetrace_extract_event_param(param_key, data_type='string', params='event_params') -%}
   {% if data_type not in ['string', 'int', 'double'] %}
-    {{ exceptions.raise_compiler_error('extract_event_param: unsupported type ' ~ data_type) }}
+    {{ exceptions.raise_compiler_error('pipetrace_extract_event_param: unsupported type ' ~ data_type) }}
   {% endif %}
   (select
     {% if data_type == 'string' %}

@@ -22,4 +22,4 @@ Expected evidence:
 - Two opportunities remain visible: linked value 1000 using explicit ARR and unmatched value 500 using Amount.
 - Every opportunity's first-observed and linear weights sum to one; allocated pipeline totals 1500, separated by revenue basis.
 
-`assert_synthetic_fixture` enforces these expectations only when `validate_fixture: true`. Never enable that fixture-only assertion against real source data. Unit tests exercise session aggregation independently of this fixture; singular tests exercise the built lineage.
+`pipetrace_assert_synthetic_fixture` enforces these expectations only when `validate_fixture: true`. Never enable that fixture-only assertion against real source data. Unit tests exercise session aggregation independently of this fixture; singular tests exercise the built lineage.

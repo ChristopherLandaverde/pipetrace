@@ -3,7 +3,7 @@ with ranked as (
   select *,
     row_number() over (partition by opportunity_id order by session_start_timestamp, session_key) as touch_rank,
     count(*) over (partition by opportunity_id) as touch_count
-  from {{ ref('int_crm_touchpoint_linkage') }}
+  from {{ ref('pipetrace_int_crm_touchpoint_linkage') }}
 ), weighted as (
   select opportunity_id, opportunity_name, date(opp_created_at) as opp_created_date,
     close_date, stage_name, is_won, is_closed, currency_code, revenue_basis,

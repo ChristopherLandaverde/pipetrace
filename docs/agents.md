@@ -11,7 +11,7 @@ PipeTrace is the governed layer an agent should query instead of raw GA4 exports
 ↓ TRACED     It queries only the two marts below, with the rules in this page
 + REPAIRED   Answers keep currency and revenue basis apart, name the model
              and window, and report the Unattributed share
-✓ VERIFIED   Totals reconcile to the CRM (assert_pipeline_reconciles) and the
+✓ VERIFIED   Totals reconcile to the CRM (pipetrace_assert_pipeline_reconciles) and the
              numbers carry a citation to the table and filter used
 ```
 
@@ -21,10 +21,10 @@ Give the agent read access to these two tables only:
 
 | Table | Grain | Use for |
 |---|---|---|
-| `fct_pipeline_attribution_daily` | Opportunity creation date × channel × attribution basis × currency × revenue basis | Pipeline and won value by channel |
-| `fct_ga4_sessions_daily` | Session date × channel × source × medium × campaign | Traffic, engagement and lead-conversion sessions |
+| `pipetrace_fct_pipeline_attribution_daily` | Opportunity creation date × channel × attribution basis × currency × revenue basis | Pipeline and won value by channel |
+| `pipetrace_fct_ga4_sessions_daily` | Session date × channel × source × medium × campaign | Traffic, engagement and lead-conversion sessions |
 
-Leave out the raw `events_*` tables, the staging views and `fct_revops_pipeline_attribution`. The bridge table repeats `opp_pipeline_value` and `opp_arr` on every touchpoint row, so an agent that sums them multiplies revenue.
+Leave out the raw `events_*` tables, the staging views and `pipetrace_fct_revops_pipeline_attribution`. The bridge table repeats `opp_pipeline_value` and `opp_arr` on every touchpoint row, so an agent that sums them multiplies revenue.
 
 Grant the agent's identity `roles/bigquery.dataViewer` on the output dataset and `roles/bigquery.jobUser` on the project. Set a `maximum_bytes_billed` cap on its connection.
 
@@ -32,7 +32,7 @@ Grant the agent's identity `roles/bigquery.dataViewer` on the output dataset and
 
 ```
 You answer marketing pipeline and traffic questions from two BigQuery tables:
-fct_pipeline_attribution_daily and fct_ga4_sessions_daily. Query nothing else.
+pipetrace_fct_pipeline_attribution_daily and pipetrace_fct_ga4_sessions_daily. Query nothing else.
 
 Revenue
 - Group every monetary sum by currency_code and revenue_basis. Never add
@@ -62,7 +62,7 @@ Language
 
 ## Checks before trusting an answer
 
-1. The latest `dbt build` passed, including `assert_pipeline_reconciles` and `assert_opportunity_coverage`.
+1. The latest `dbt build` passed, including `pipetrace_assert_pipeline_reconciles` and `pipetrace_assert_opportunity_coverage`.
 2. The question's dates fall inside the observation window. The default is the last 90 days (`ga4_lookback_days`). Deals whose sessions fall outside it show as Unattributed.
 3. `ga4_timezone` matches the GA4 property's timezone. A mismatch moves sessions across midnight.
 
@@ -82,7 +82,7 @@ The agent step needs one-time setup:
 
 ## Cross-checking GA4's own numbers
 
-`scripts/ga4_crosscheck.py` compares GA4's Data API session counts per day with `fct_ga4_sessions_daily`. The two never match exactly, because of thresholding and session counting differences, so it flags days that drift beyond a tolerance (5% by default). It skips days where both sides have under 20 sessions. It prints percentages only, not traffic counts, because CI logs on a public repository are public. Pass `--show-counts` locally to see the counts. GA4 reports dates in the property's timezone, so set `ga4_timezone` to match.
+`scripts/ga4_crosscheck.py` compares GA4's Data API session counts per day with `pipetrace_fct_ga4_sessions_daily`. The two never match exactly, because of thresholding and session counting differences, so it flags days that drift beyond a tolerance (5% by default). It skips days where both sides have under 20 sessions. It prints percentages only, not traffic counts, because CI logs on a public repository are public. Pass `--show-counts` locally to see the counts. GA4 reports dates in the property's timezone, so set `ga4_timezone` to match.
 
 The `crosscheck` step of the workflow runs it. It needs:
 - a GA4 property with BigQuery export linked, plus PipeTrace's marts built from that export;

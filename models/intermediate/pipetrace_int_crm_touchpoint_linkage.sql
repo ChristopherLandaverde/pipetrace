@@ -7,14 +7,14 @@
 -- buyer seen on two devices has both devices' sessions credited equally.
 -- Opportunities with none of these stay Unattributed (level null).
 with opportunities as (
-  select * from {{ ref('stg_sfdc_opportunities') }}
+  select * from {{ ref('pipetrace_stg_sfdc_opportunities') }}
 ), paths as (
-  select * from {{ ref('int_opportunity_identity_paths') }}
+  select * from {{ ref('pipetrace_int_opportunity_identity_paths') }}
 ), token_candidates as (
   select p.opportunity_id, t.session_key, p.match_method, p.match_priority
   from paths p
-  join {{ ref('int_session_conversion_tokens') }} t on p.conversion_token = t.original_conversion_id
-  join {{ ref('int_ga4_sessions') }} s on t.session_key = s.session_key
+  join {{ ref('pipetrace_int_session_conversion_tokens') }} t on p.conversion_token = t.original_conversion_id
+  join {{ ref('pipetrace_int_ga4_sessions') }} s on t.session_key = s.session_key
   join opportunities o on p.opportunity_id = o.opportunity_id
   where p.conversion_token is not null
     and s.session_start_timestamp <= o.created_at
@@ -23,7 +23,7 @@ with opportunities as (
 ), client_candidates as (
   select p.opportunity_id, s.session_key, p.match_method, p.match_priority
   from paths p
-  join {{ ref('int_ga4_sessions') }} s on p.ga_client_id = s.user_pseudo_id
+  join {{ ref('pipetrace_int_ga4_sessions') }} s on p.ga_client_id = s.user_pseudo_id
   join opportunities o on p.opportunity_id = o.opportunity_id
   where {{ pipetrace_flag('enable_ga_client_id_matching') }}
     and p.ga_client_id is not null
@@ -80,4 +80,4 @@ select o.opportunity_id, o.opportunity_name, o.stage_name,
   coalesce(s.session_default_channel_grouping, e.crm_channel_grouping) as channel_grouping
 from opportunities o
 left join evidence e on o.opportunity_id = e.opportunity_id
-left join {{ ref('int_ga4_sessions') }} s on e.session_key = s.session_key
+left join {{ ref('pipetrace_int_ga4_sessions') }} s on e.session_key = s.session_key

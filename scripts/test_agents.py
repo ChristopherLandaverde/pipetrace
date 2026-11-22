@@ -19,7 +19,7 @@ class DataAgentConfig(unittest.TestCase):
 
     def test_only_governed_marts(self):
         refs = self.body['dataAnalyticsAgent']['publishedContext']['datasourceReferences']['bq']['tableReferences']
-        self.assertEqual({r['tableId'] for r in refs}, {'fct_pipeline_attribution_daily', 'fct_ga4_sessions_daily'})
+        self.assertEqual({r['tableId'] for r in refs}, {'pipetrace_fct_pipeline_attribution_daily', 'pipetrace_fct_ga4_sessions_daily'})
         self.assertTrue(all(r['projectId'] == 'demo-proj' and r['datasetId'] == 'pipetrace_demo_models' for r in refs))
 
     def test_staging_and_published_match(self):

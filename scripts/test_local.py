@@ -45,34 +45,34 @@ class AttributionAcceptance(unittest.TestCase):
         self.db.row_factory = sqlite3.Row
         self.db.create_function('days_between', 2, lambda end, start: None if start is None else int((dt.datetime.fromisoformat(end)-dt.datetime.fromisoformat(start)).total_seconds()/86400))
         self.db.executescript('''
-        create table stg_sfdc_leads (sfdc_lead_id text, converted_contact_id text, converted_opportunity_id text, original_conversion_id text, ga_client_id text, ft_source text, ft_medium text, ft_campaign text, created_at text);
-        create table stg_hubspot_contacts (hubspot_contact_id text, sfdc_lead_id text, sfdc_contact_id text, original_conversion_id text, ga_client_id text, original_source text, created_at text);
-        create table stg_sfdc_opportunities (opportunity_id text, opportunity_name text, stage_name text, arr real, amount real, pipeline_value real, revenue_basis text, currency_code text, is_won bool, is_closed bool, created_at text, close_date text, original_conversion_id text, primary_contact_id text, ga_client_id text);
-        create table int_ga4_sessions (session_key text, user_pseudo_id text, session_start_timestamp text, session_source text, session_medium text, session_campaign text, session_default_channel_grouping text);
-        create table int_session_conversion_tokens (session_key text, original_conversion_id text, conversion_timestamp text);
+        create table pipetrace_stg_sfdc_leads (sfdc_lead_id text, converted_contact_id text, converted_opportunity_id text, original_conversion_id text, ga_client_id text, ft_source text, ft_medium text, ft_campaign text, created_at text);
+        create table pipetrace_stg_hubspot_contacts (hubspot_contact_id text, sfdc_lead_id text, sfdc_contact_id text, original_conversion_id text, ga_client_id text, original_source text, created_at text);
+        create table pipetrace_stg_sfdc_opportunities (opportunity_id text, opportunity_name text, stage_name text, arr real, amount real, pipeline_value real, revenue_basis text, currency_code text, is_won bool, is_closed bool, created_at text, close_date text, original_conversion_id text, primary_contact_id text, ga_client_id text);
+        create table pipetrace_int_ga4_sessions (session_key text, user_pseudo_id text, session_start_timestamp text, session_source text, session_medium text, session_campaign text, session_default_channel_grouping text);
+        create table pipetrace_int_session_conversion_tokens (session_key text, original_conversion_id text, conversion_timestamp text);
         ''')
 
     def tearDown(self):
         self.db.close()
 
     def opportunity(self, oid='o1', token='token1', contact='c1', value=1200, arr=1000):
-        self.db.execute('insert into stg_sfdc_opportunities values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', (oid,'Synthetic deal','Closed Won',arr,value,value,'ARR' if arr is not None else 'Amount','USD',1,1,'2026-01-10 12:00:00','2026-02-01',token,contact,None))
+        self.db.execute('insert into pipetrace_stg_sfdc_opportunities values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', (oid,'Synthetic deal','Closed Won',arr,value,value,'ARR' if arr is not None else 'Amount','USD',1,1,'2026-01-10 12:00:00','2026-02-01',token,contact,None))
 
     def session(self, key='s1', token='token1', at='2026-01-01 12:00:00', conversion_at=None, user='u1'):
-        self.db.execute('insert into int_ga4_sessions values (?,?,?,?,?,?,?)',(key,user,at,'google','cpc','synthetic','Paid Search'))
+        self.db.execute('insert into pipetrace_int_ga4_sessions values (?,?,?,?,?,?,?)',(key,user,at,'google','cpc','synthetic','Paid Search'))
         if token is not None:
-            self.db.execute('insert into int_session_conversion_tokens values (?,?,?)',(key,token,conversion_at or at))
+            self.db.execute('insert into pipetrace_int_session_conversion_tokens values (?,?,?)',(key,token,conversion_at or at))
 
     def lead(self, lid='l1', contact=None, opp='o1', token=None, client=None, source=None, medium=None, campaign=None, created='2026-01-05 12:00:00'):
-        self.db.execute('insert into stg_sfdc_leads values (?,?,?,?,?,?,?,?,?)',(lid,contact,opp,token,client,source,medium,campaign,created))
+        self.db.execute('insert into pipetrace_stg_sfdc_leads values (?,?,?,?,?,?,?,?,?)',(lid,contact,opp,token,client,source,medium,campaign,created))
 
     def contact(self, hid='h1', lead=None, sfdc_contact=None, token=None, client=None, source=None, created='2026-01-05 12:00:00'):
-        self.db.execute('insert into stg_hubspot_contacts values (?,?,?,?,?,?,?)',(hid,lead,sfdc_contact,token,client,source,created))
+        self.db.execute('insert into pipetrace_stg_hubspot_contacts values (?,?,?,?,?,?,?)',(hid,lead,sfdc_contact,token,client,source,created))
 
     def build(self, **overrides):
-        for name in ('int_opportunity_identity_paths','int_crm_touchpoint_linkage','fct_revops_pipeline_attribution','fct_pipeline_attribution_daily'):
+        for name in ('pipetrace_int_opportunity_identity_paths','pipetrace_int_crm_touchpoint_linkage','pipetrace_fct_revops_pipeline_attribution','pipetrace_fct_pipeline_attribution_daily'):
             self.db.execute('create table '+name+' as '+render_sql(name, overrides))
-        return [dict(r) for r in self.db.execute('select * from fct_revops_pipeline_attribution order by opportunity_id, session_key')]
+        return [dict(r) for r in self.db.execute('select * from pipetrace_fct_revops_pipeline_attribution order by opportunity_id, session_key')]
 
     def test_duplicate_crm_paths_do_not_multiply_revenue(self):
         self.opportunity(); self.session()
@@ -125,7 +125,7 @@ class AttributionAcceptance(unittest.TestCase):
 
     def test_multiple_tokens_one_session_deduplicated(self):
         self.opportunity(); self.session()
-        self.db.execute("insert into int_session_conversion_tokens values ('s1','token2','2026-01-01 13:00:00')")
+        self.db.execute("insert into pipetrace_int_session_conversion_tokens values ('s1','token2','2026-01-01 13:00:00')")
         self.lead(contact='c1',token='token2')
         self.assertEqual(len(self.build()),1)
 
@@ -146,15 +146,15 @@ class AttributionAcceptance(unittest.TestCase):
 
     def test_daily_currency_separation(self):
         self.opportunity(); self.opportunity('o2'); self.session()
-        self.db.execute("update stg_sfdc_opportunities set currency_code='EUR' where opportunity_id='o2'")
+        self.db.execute("update pipetrace_stg_sfdc_opportunities set currency_code='EUR' where opportunity_id='o2'")
         self.build()
-        rows=self.db.execute('select currency_code,linear_pipeline_value from fct_pipeline_attribution_daily order by currency_code').fetchall()
+        rows=self.db.execute('select currency_code,linear_pipeline_value from pipetrace_fct_pipeline_attribution_daily order by currency_code').fetchall()
         self.assertEqual([tuple(r) for r in rows],[('EUR',1200),('USD',1200)])
 
     def test_relational_integrity_tests_execute(self):
         self.opportunity(); self.session(); self.opportunity('o2',token=None)
         self.build()
-        for name in ['assert_attribution_weights','assert_opportunity_coverage','assert_attribution_grain','assert_pipeline_reconciles','assert_no_future_touchpoints']:
+        for name in ['pipetrace_assert_attribution_weights','pipetrace_assert_opportunity_coverage','pipetrace_assert_attribution_grain','pipetrace_assert_pipeline_reconciles','pipetrace_assert_no_future_touchpoints']:
             sql=(ROOT/'tests'/f'{name}.sql').read_text()
             sql=re.sub(r"\{\{ ref\('([^']+)'\) \}\}",r'\1',sql)
             with self.subTest(name=name):
@@ -247,7 +247,7 @@ class AttributionAcceptance(unittest.TestCase):
         self.opportunity('o2',token=None,contact=None)
         self.lead('l2',opp='o2',medium='cpc',source='google')
         self.build()
-        rows=self.db.execute('select channel_grouping,attribution_basis,linear_pipeline_value from fct_pipeline_attribution_daily order by attribution_basis').fetchall()
+        rows=self.db.execute('select channel_grouping,attribution_basis,linear_pipeline_value from pipetrace_fct_pipeline_attribution_daily order by attribution_basis').fetchall()
         self.assertEqual([tuple(r) for r in rows],[('Paid Search','conversion_token',1200),('Paid Search','crm_source',1200)])
 
     def test_relational_integrity_tests_execute_across_levels(self):
@@ -259,7 +259,7 @@ class AttributionAcceptance(unittest.TestCase):
         rows=self.build()
         self.assertEqual(sorted({(r['opportunity_id'],r['attribution_basis']) for r in rows}),
             [('o1','conversion_token'),('o2','ga_client_id'),('o3','crm_source'),('o4','unattributed')])
-        for name in ['assert_attribution_weights','assert_opportunity_coverage','assert_attribution_grain','assert_pipeline_reconciles','assert_no_future_touchpoints']:
+        for name in ['pipetrace_assert_attribution_weights','pipetrace_assert_opportunity_coverage','pipetrace_assert_attribution_grain','pipetrace_assert_pipeline_reconciles','pipetrace_assert_no_future_touchpoints']:
             sql=(ROOT/'tests'/f'{name}.sql').read_text()
             sql=re.sub(r"\{\{ ref\('([^']+)'\) \}\}",r'\1',sql)
             with self.subTest(name=name):

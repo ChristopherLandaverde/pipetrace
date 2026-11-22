@@ -1,4 +1,4 @@
-"""Cross-check GA4's own session counts against PipeTrace's fct_ga4_sessions_daily.
+"""Cross-check GA4's own session counts against PipeTrace's pipetrace_fct_ga4_sessions_daily.
 
 GA4's Data API and the BigQuery export never match exactly: the API applies
 thresholding and counts sessions differently. This flags drift beyond a
@@ -67,7 +67,7 @@ def ga4_sessions(property_id, start, end):
 def warehouse_sessions(project, dataset, start, end):
     from google.cloud import bigquery
     sql = (f'SELECT session_date, SUM(total_sessions) AS sessions '
-           f'FROM `{project}.{dataset}.fct_ga4_sessions_daily` '
+           f'FROM `{project}.{dataset}.pipetrace_fct_ga4_sessions_daily` '
            f'WHERE session_date BETWEEN @start AND @end GROUP BY 1')
     cfg = bigquery.QueryJobConfig(
         query_parameters=[bigquery.ScalarQueryParameter('start', 'DATE', start),

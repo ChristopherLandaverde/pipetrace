@@ -8,5 +8,5 @@ select session_date, session_default_channel_grouping,
   countif(has_lead_conversion) as lead_conversion_sessions,
   count(distinct user_pseudo_id) as unique_visitors,
   sum(total_events) as total_events
-from {{ ref('int_ga4_sessions') }}
+from {{ ref('pipetrace_int_ga4_sessions') }}
 group by 1, 2, 3, 4, 5

@@ -32,7 +32,7 @@ GitHub does not give pull requests from forks the identity token the BigQuery si
 
 - Synthetic data only. Never commit client data, real CRM exports or credentials.
 - Joins use record IDs and conversion tokens, never email.
-- A new attribution path needs a test in `scripts/test_local.py` and, if it changes fixture output, an updated `tests/assert_synthetic_fixture.sql`.
+- A new attribution path needs a test in `scripts/test_local.py` and, if it changes fixture output, an updated `tests/pipetrace_assert_synthetic_fixture.sql`.
 - Do not change a test or a CI check just to make a failure go away.
 - Record a design decision in `DECISIONS.md` with its reason.
 

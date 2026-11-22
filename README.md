@@ -28,11 +28,11 @@
 PipeTrace is a dbt package for marketing ops and RevOps analysts who have to say which channels sourced pipeline, and defend the number. By Christopher Landaverde, FOCO Systems. Sibling of [Open Source Revenue Attribution](https://github.com/ChristopherLandaverde/open-source-revenue-attribution), which does the same job as a self-hosted app.
 
 <p align="center">
-  <img src="docs/images/pipeline.svg" width="880" alt="PipeTrace pipeline. Sources: GA4 daily export, HubSpot contacts with conversion tokens, Salesforce leads and opportunities. int_ga4_sessions builds one row per user and session ID. int_session_conversion_tokens keeps every token per session. int_crm_touchpoint_linkage joins tokens to opportunities by ranked deterministic ID paths, keeping unmatched deals. fct_revops_pipeline_attribution weights sessions first-observed and linear, each summing to 1, and fct_pipeline_attribution_daily is the BI surface. Checks: midnight sessions count once, no token shared across users, every opportunity present, weights sum to 1, pipeline reconciles to source value.">
+  <img src="docs/images/pipeline.svg" width="880" alt="PipeTrace pipeline. Sources: GA4 daily export, HubSpot contacts with conversion tokens, Salesforce leads and opportunities. pipetrace_int_ga4_sessions builds one row per user and session ID. pipetrace_int_session_conversion_tokens keeps every token per session. pipetrace_int_crm_touchpoint_linkage joins tokens to opportunities by ranked deterministic ID paths, keeping unmatched deals. pipetrace_fct_revops_pipeline_attribution weights sessions first-observed and linear, each summing to 1, and pipetrace_fct_pipeline_attribution_daily is the BI surface. Checks: midnight sessions count once, no token shared across users, every opportunity present, weights sum to 1, pipeline reconciles to source value.">
   <br><sub>Model names and checks as built. The counts come from the CI run on synthetic data.</sub>
 </p>
 
-`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 14 models, with 37 data tests, 1 native unit test, and 2 fixture-only checks, plus mapping views for Fivetran or Airbyte tables that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
+`Scope /` BigQuery only. Reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 14 models, with 37 data tests, 1 native unit test, and 2 fixture-only checks, plus mapping views for Fivetran or Airbyte tables that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
 
 It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQuery Semantic Layer**. Sessions are modeled across daily export tables. Session attribution stays separate from lifetime acquisition. Polymorphic parameters are coerced safely. Immutable conversion tokens link sessions to CRM opportunities.
 
@@ -141,19 +141,19 @@ Levels 1 and 2 are traced to sessions. Level 0 is the CRM's own claim, so report
 
 | Model | Grain | Intended use |
 |---|---|---|
-| `stg_ga4_events` | Export event | Restricted parameter and attribution inspection |
-| `stg_hubspot_contacts` | Current contact | Restricted identity evidence |
-| `stg_sfdc_leads` | Current lead | Restricted converted IDs |
-| `stg_sfdc_opportunities` | Current opportunity | Revenue reconciliation |
-| `int_ga4_sessions` | User pseudonym + session ID | Session metrics and provenance |
-| `int_session_conversion_tokens` | Session + conversion token | Preserve multiple conversions per session |
-| `int_opportunity_identity_paths` | Opportunity + CRM record path | Restricted token, client ID and CRM-source evidence |
-| `int_crm_touchpoint_linkage` | Opportunity + session, including unmatched | Auditable linkage evidence |
-| `dim_touchpoints` | Session | Restricted session detail |
-| `fct_ga4_sessions_daily` | Date + channel/source/medium/campaign | Traffic reporting |
-| `fct_revops_pipeline_attribution` | Opportunity + session | Attribution bridge; use allocated measures |
-| `fct_pipeline_attribution_daily` | Opportunity creation date + channel/currency/basis | Preferred BI and agent revenue surface |
-| `audit_ga4_unkeyed_events` | Export date + event name | Missing-identity coverage |
+| `pipetrace_stg_ga4_events` | Export event | Restricted parameter and attribution inspection |
+| `pipetrace_stg_hubspot_contacts` | Current contact | Restricted identity evidence |
+| `pipetrace_stg_sfdc_leads` | Current lead | Restricted converted IDs |
+| `pipetrace_stg_sfdc_opportunities` | Current opportunity | Revenue reconciliation |
+| `pipetrace_int_ga4_sessions` | User pseudonym + session ID | Session metrics and provenance |
+| `pipetrace_int_session_conversion_tokens` | Session + conversion token | Preserve multiple conversions per session |
+| `pipetrace_int_opportunity_identity_paths` | Opportunity + CRM record path | Restricted token, client ID and CRM-source evidence |
+| `pipetrace_int_crm_touchpoint_linkage` | Opportunity + session, including unmatched | Auditable linkage evidence |
+| `pipetrace_dim_touchpoints` | Session | Restricted session detail |
+| `pipetrace_fct_ga4_sessions_daily` | Date + channel/source/medium/campaign | Traffic reporting |
+| `pipetrace_fct_revops_pipeline_attribution` | Opportunity + session | Attribution bridge; use allocated measures |
+| `pipetrace_fct_pipeline_attribution_daily` | Opportunity creation date + channel/currency/basis | Preferred BI and agent revenue surface |
+| `pipetrace_audit_ga4_unkeyed_events` | Export date + event name | Missing-identity coverage |
 
 See [architecture and decisions](docs/architecture.md), [metric definitions](docs/metrics.md), [operations](docs/operations.md), and [using PipeTrace with a data agent](docs/agents.md).
 
