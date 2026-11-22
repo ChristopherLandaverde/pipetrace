@@ -1,7 +1,10 @@
 -- Each opportunity is credited at the strongest level its evidence supports:
 --   2 conversion_token  sessions holding the token copied to the CRM
 --   1 ga_client_id      sessions of the GA4 client ID stored on a CRM record
---   0 crm_source        the source the CRM itself recorded; no session
+--   0 crm_source        the source the CRM itself recorded; no session. Only
+--                       from a record created on or before the opportunity
+-- Level 1 uses every client ID found on the opportunity's CRM records, so a
+-- buyer seen on two devices has both devices' sessions credited equally.
 -- Opportunities with none of these stay Unattributed (level null).
 with opportunities as (
   select * from {{ ref('stg_sfdc_opportunities') }}
@@ -22,7 +25,7 @@ with opportunities as (
   from paths p
   join {{ ref('int_ga4_sessions') }} s on p.ga_client_id = s.user_pseudo_id
   join opportunities o on p.opportunity_id = o.opportunity_id
-  where {{ var('enable_ga_client_id_matching') }}
+  where {{ pipetrace_flag('enable_ga_client_id_matching') }}
     and p.ga_client_id is not null
     and s.session_start_timestamp <= o.created_at
     and s.session_start_timestamp >= timestamp_sub(o.created_at, interval {{ var('attribution_lookback_days') | int }} day)
@@ -42,11 +45,14 @@ with opportunities as (
     on c.opportunity_id = b.opportunity_id and c.attribution_level = b.attribution_level
 ), crm_ranked as (
   select p.*,
-    row_number() over (partition by p.opportunity_id order by p.match_priority, p.match_method) as crm_rank
+    row_number() over (partition by p.opportunity_id
+      order by p.match_priority, p.match_method, p.crm_record_created_at, p.crm_record_id) as crm_rank
   from paths p
+  join opportunities o on p.opportunity_id = o.opportunity_id
   left join best_session_level b on p.opportunity_id = b.opportunity_id
-  where {{ var('enable_crm_source_fallback') }}
+  where {{ pipetrace_flag('enable_crm_source_fallback') }}
     and p.crm_channel_grouping is not null
+    and (p.crm_record_created_at is null or p.crm_record_created_at <= o.created_at)
     and b.opportunity_id is null
 ), evidence as (
   select opportunity_id, session_key, match_method, attribution_level,

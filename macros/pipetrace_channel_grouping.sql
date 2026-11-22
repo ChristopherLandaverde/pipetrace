@@ -31,13 +31,23 @@
   end
 {%- endmacro %}
 
-{#- Read a column that may not exist in the source table. Returns a trimmed
+{#- Boolean var that also accepts the strings true/false/yes/no/1/0 from --vars. -#}
+{% macro pipetrace_flag(name) -%}
+  {%- set v = var(name) -%}
+  {%- if v is string -%}{{ 'false' if v | lower | trim in ['false', '0', 'no', 'off', ''] else 'true' }}
+  {%- else -%}{{ 'true' if v else 'false' }}{%- endif -%}
+{%- endmacro %}
+
+{#- Read a column that may not exist in the source table. Names are
+    case-sensitive: they must match the column exactly as BigQuery stores it. Returns a trimmed
     STRING, or NULL when the column is absent or blank. -#}
 {% macro pipetrace_optional_column(column_name, row_json='row_json') -%}
   {%- if column_name is none or column_name == '' -%}
     cast(null as string)
+  {%- elif not modules.re.fullmatch('[A-Za-z_][A-Za-z0-9_]*', column_name) -%}
+    {{ exceptions.raise_compiler_error('PipeTrace: field name "' ~ column_name ~ '" must be a plain column name (letters, digits, underscores).') }}
   {%- else -%}
-    nullif(trim(json_value({{ row_json }}, '$.{{ column_name | replace("'", "") }}')), '')
+    nullif(trim(json_value({{ row_json }}, '$.{{ column_name }}')), '')
   {%- endif -%}
 {%- endmacro %}
 

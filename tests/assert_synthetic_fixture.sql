@@ -5,7 +5,7 @@ from unnest([1])
 where (select count(*) from {{ ref('int_ga4_sessions') }}) != 4
   or (select count(*) from {{ ref('stg_sfdc_opportunities') }}) != 5
   or (select count(*) from {{ ref('fct_revops_pipeline_attribution') }}) != 6
-  or (select sum(linear_pipeline_value) from {{ ref('fct_revops_pipeline_attribution') }}) is distinct from 3000
+  or (select sum(linear_pipeline_value) from {{ ref('fct_revops_pipeline_attribution') }}) is distinct from 2800
   or (select count(*) from {{ ref('fct_revops_pipeline_attribution') }} where channel_grouping = 'Unattributed') != 1
   -- One opportunity per level: o1 token, o3 client ID (two sessions), o4 and o5 CRM source, o2 none.
   or (select string_agg(concat(opportunity_id, ':', attribution_basis, ':', channel_grouping, ':', format('%.2f', linear_touch_weight)), ',' order by opportunity_id, session_key)

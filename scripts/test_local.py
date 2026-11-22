@@ -14,6 +14,7 @@ for path in (ROOT / 'macros').glob('*.sql'):
 # Only these plain-SQL macros are expanded; anything else must stay out of the
 # models rendered here, or render_sql fails loudly.
 LOCAL_MACROS = ('pipetrace_channel_grouping', 'pipetrace_hubspot_source_channel')
+FLAG_RE = re.compile(r"\{\{ pipetrace_flag\('(\w+)'\) \}\}")
 VARS = {'attribution_lookback_days': '90', 'enable_ga_client_id_matching': 'true', 'enable_crm_source_fallback': 'true'}
 
 def expand_macro(match):
@@ -30,6 +31,7 @@ def render_sql(name, overrides=None):
     sql = re.sub(r"\{\{ ref\('([^']+)'\) \}\}", r'\1', sql)
     values = {**VARS, **(overrides or {})}
     sql = re.sub(r"\{\{ var\('(\w+)'\)(?: \| int)? \}\}", lambda m: values[m.group(1)], sql)
+    sql = FLAG_RE.sub(lambda m: values[m.group(1)], sql)
     sql = re.sub(r"\{\{ (" + '|'.join(LOCAL_MACROS) + r")\((.*?)\) \}\}", expand_macro, sql)
     sql = re.sub(r'timestamp_sub\((\w+)\.created_at, interval (\d+) day\)', r"datetime(\1.created_at, '-\2 day')", sql)
     sql = sql.replace('timestamp_diff(opp_created_at, session_start_timestamp, day)', 'days_between(opp_created_at, session_start_timestamp)')
@@ -43,8 +45,8 @@ class AttributionAcceptance(unittest.TestCase):
         self.db.row_factory = sqlite3.Row
         self.db.create_function('days_between', 2, lambda end, start: None if start is None else int((dt.datetime.fromisoformat(end)-dt.datetime.fromisoformat(start)).total_seconds()/86400))
         self.db.executescript('''
-        create table stg_sfdc_leads (sfdc_lead_id text, converted_contact_id text, converted_opportunity_id text, original_conversion_id text, ga_client_id text, ft_source text, ft_medium text, ft_campaign text);
-        create table stg_hubspot_contacts (hubspot_contact_id text, sfdc_lead_id text, sfdc_contact_id text, original_conversion_id text, ga_client_id text, original_source text);
+        create table stg_sfdc_leads (sfdc_lead_id text, converted_contact_id text, converted_opportunity_id text, original_conversion_id text, ga_client_id text, ft_source text, ft_medium text, ft_campaign text, created_at text);
+        create table stg_hubspot_contacts (hubspot_contact_id text, sfdc_lead_id text, sfdc_contact_id text, original_conversion_id text, ga_client_id text, original_source text, created_at text);
         create table stg_sfdc_opportunities (opportunity_id text, opportunity_name text, stage_name text, arr real, amount real, pipeline_value real, revenue_basis text, currency_code text, is_won bool, is_closed bool, created_at text, close_date text, original_conversion_id text, primary_contact_id text, ga_client_id text);
         create table int_ga4_sessions (session_key text, user_pseudo_id text, session_start_timestamp text, session_source text, session_medium text, session_campaign text, session_default_channel_grouping text);
         create table int_session_conversion_tokens (session_key text, original_conversion_id text, conversion_timestamp text);
@@ -61,11 +63,11 @@ class AttributionAcceptance(unittest.TestCase):
         if token is not None:
             self.db.execute('insert into int_session_conversion_tokens values (?,?,?)',(key,token,conversion_at or at))
 
-    def lead(self, lid='l1', contact=None, opp='o1', token=None, client=None, source=None, medium=None, campaign=None):
-        self.db.execute('insert into stg_sfdc_leads values (?,?,?,?,?,?,?,?)',(lid,contact,opp,token,client,source,medium,campaign))
+    def lead(self, lid='l1', contact=None, opp='o1', token=None, client=None, source=None, medium=None, campaign=None, created='2026-01-05 12:00:00'):
+        self.db.execute('insert into stg_sfdc_leads values (?,?,?,?,?,?,?,?,?)',(lid,contact,opp,token,client,source,medium,campaign,created))
 
-    def contact(self, hid='h1', lead=None, sfdc_contact=None, token=None, client=None, source=None):
-        self.db.execute('insert into stg_hubspot_contacts values (?,?,?,?,?,?)',(hid,lead,sfdc_contact,token,client,source))
+    def contact(self, hid='h1', lead=None, sfdc_contact=None, token=None, client=None, source=None, created='2026-01-05 12:00:00'):
+        self.db.execute('insert into stg_hubspot_contacts values (?,?,?,?,?,?,?)',(hid,lead,sfdc_contact,token,client,source,created))
 
     def build(self, **overrides):
         for name in ('int_opportunity_identity_paths','int_crm_touchpoint_linkage','fct_revops_pipeline_attribution','fct_pipeline_attribution_daily'):
@@ -216,6 +218,17 @@ class AttributionAcceptance(unittest.TestCase):
         rows=self.build()
         self.assertEqual([r['attribution_basis'] for r in rows],['conversion_token'])
         self.assertEqual(rows[0]['channel_grouping'],'Paid Search')
+
+    def test_crm_source_after_opportunity_creation_ignored(self):
+        self.opportunity(token=None,contact=None)
+        self.lead(medium='organic',source='google',created='2026-01-11 12:00:00')
+        self.assertEqual(self.build()[0]['attribution_basis'],'unattributed')
+
+    def test_crm_source_ties_break_by_record(self):
+        self.opportunity(token=None,contact='c5')
+        self.contact('h9',sfdc_contact='c5',source='PAID_SOCIAL',created='2026-01-02 12:00:00')
+        self.contact('h8',sfdc_contact='c5',source='ORGANIC_SEARCH',created='2026-01-02 12:00:00')
+        self.assertEqual(self.build()[0]['channel_grouping'],'Organic Search')
 
     def test_levels_can_be_switched_off(self):
         self.opportunity(token=None,contact=None)
