@@ -1,6 +1,6 @@
 # Validation record
 
-Implementation based on Christopher's supplied FOCO Analytics Engineering Lab PDF. Synthetic data only. Status: native BigQuery build passes on synthetic data (49 of 49, 2026-11-22). Not yet run against real source data.
+Implementation based on Christopher's supplied FOCO Analytics Engineering Lab PDF. Synthetic data only. Status: native BigQuery build passes on synthetic data (54 of 54 native, 57 of 57 Fivetran-shaped, 55 of 55 Airbyte-shaped, 2026-11-22, dbt 1.12.7). Not yet run against real source data.
 
 | Check | Observed result |
 |---|---|
@@ -16,7 +16,7 @@ Implementation based on Christopher's supplied FOCO Analytics Engineering Lab PD
 | dbt dependency installation | Passed in GitHub Actions (`dbt deps`, run 44009430700, 2026-11-17). Locally: dbt-core 1.10.23 / dbt-bigquery 1.10.3 installed; dbt Hub blocked by egress policy, so dbt_utils 1.3.0 was vendored from its GitHub tag for the parse check |
 | dbt parse | Passed, exit 0: GitHub Actions on `main` (f222123) and locally with `--profiles-dir ci --no-partial-parse`. Resolved 12 models, 31 data tests, 1 unit test, 4 sources |
 | dbt compile | Covered by the native `dbt build` above |
-| Native BigQuery unit/data tests | Passed 49 of 49 in GitHub Actions run 45026750756 (2026-11-22): 13 models, 35 data tests, 1 unit test, with one opportunity per attribution level; earlier 45 of 45 in run 44109338907 (2026-11-17), against a synthetic fixture in project `foco-revops-ci` (BigQuery sandbox, no billing). Every model built 2 rows; `assert_synthetic_fixture` confirms 2 sessions, 2 opportunities, 1 Unattributed, linear pipeline total 1500 |
+| Native BigQuery unit/data tests | Passed in GitHub Actions run 45029750908 (2026-11-22, dbt 1.12.7): native 54 of 54 (14 models, 39 data tests including 2 fixture checks, 1 unit test); Fivetran-shaped tables 57 of 57 and Airbyte-shaped 55 of 55 (plus their mapping views); one opportunity per attribution level, readiness values asserted. Earlier 49 of 49 in run 45026750756; earlier 45 of 45 in run 44109338907 (2026-11-17), against a synthetic fixture in project `foco-revops-ci` (BigQuery sandbox, no billing). Every model built 2 rows; `assert_synthetic_fixture` confirms 2 sessions, 2 opportunities, 1 Unattributed, linear pipeline total 1500 |
 | Native run fixes | Run 1: unit-test expected rows listed columns in different orders (UNION ALL type error). Run 2: two tests used SELECT … WHERE without FROM; sandbox 60-day partition expiry emptied tables built from the fixed 2026-01-01 fixture. Fixture dates are now relative (`--base-date`, 12 days back in CI) |
 | Production deployment / public repository | Not performed |
 

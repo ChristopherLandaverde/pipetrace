@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  13 dbt models on BigQuery · three attribution levels, each labeled · first-observed and linear credit that sums to 1 per opportunity · 49 of 49 dbt nodes pass on BigQuery in CI (13 models, 36 tests) · read-only on GA4, HubSpot and Salesforce
+  14 dbt models on BigQuery · three attribution levels, each labeled · first-observed and linear credit that sums to 1 per opportunity · 54 of 54 dbt nodes pass on BigQuery in CI (14 models, 40 tests), for native, Fivetran and Airbyte tables · read-only on GA4, HubSpot and Salesforce
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@ PipeTrace is a dbt package for marketing ops and RevOps analysts who have to say
   <br><sub>Model names and checks as built. The counts come from the CI run on synthetic data.</sub>
 </p>
 
-`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 13 models, with 34 data tests, 1 native unit test, and 1 fixture-only check that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
+`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 14 models, with 37 data tests, 1 native unit test, and 2 fixture-only checks, plus mapping views for Fivetran or Airbyte tables that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
 
 It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQuery Semantic Layer**. Sessions are modeled across daily export tables. Session attribution stays separate from lifetime acquisition. Polymorphic parameters are coerced safely. Immutable conversion tokens link sessions to CRM opportunities.
 
@@ -48,8 +48,9 @@ It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQ
              three attribution levels, strongest wins per deal and is labeled;
              unmatched deals kept as Unattributed
 ✓ VERIFIED   14 local relational tests pass; dbt parse passes in CI;
-             native BigQuery build passes 49 of 49 (13 models, 34 data tests
-             + 1 fixture check, 1 unit test) on synthetic data, run 45026750756
+             native BigQuery build passes 54 of 54 (14 models, 37 data tests
+             + 2 fixture checks, 1 unit test) on synthetic data, and 57/57
+             and 55/55 with Fivetran and Airbyte tables, run 45029750908
 ```
 
 See the [validation record](VALIDATION.md) for what has run and what has not.

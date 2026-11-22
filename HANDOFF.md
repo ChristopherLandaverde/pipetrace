@@ -1,17 +1,19 @@
 # Handoff — PipeTrace
 
-`Handoff note · 2026-11-16 · State, blockers, and the next three steps`
+`Handoff note · 2026-11-22 · State, blockers, and the next steps`
 
-Read this first tomorrow. It records where the build stopped and how to resume.
+Read this first. It records where the build stopped and how to resume.
 
 ## Where things stand
 
 ```
-□ OBSERVED   Repo: github.com/ChristopherLandaverde/pipetrace (private; renamed from foco-revops-warehouse 2026-11-17)
-             main = 8592524: PR #1 merged 2026-11-17
-✓ VERIFIED   test_local.py 14/14 · check_repository.py PASS · dbt parse in CI
-             Native BigQuery build 45/45 in GitHub Actions (run 44109338907)
-× OPEN       Not yet run against real source data (client engagement scope).
+□ OBSERVED   Repo: github.com/ChristopherLandaverde/pipetrace (public since 2026-11-22)
+             main carries PRs #1-#11; release v1.0.0
+✓ VERIFIED   test_local.py 27/27 · check_repository.py PASS · dbt parse per connector
+             Native BigQuery build in GitHub Actions on dbt 1.12.7 (run 45029750908):
+             native 54/54, Fivetran-shaped 57/57, Airbyte-shaped 55/55
+× OPEN       Not yet run against real source data or a live Fivetran/Airbyte connection.
+             GTM snippets in docs/setup-guide.md not yet run on a live site.
 ```
 
 ## How the native test runs now
@@ -21,7 +23,7 @@ No Terminal steps. The `Native BigQuery walkthrough` workflow runs on PRs that t
 - GCP project `foco-revops-ci`: no billing, so BigQuery runs in the free sandbox.
 - Service account `foco-ci-walkthrough`: BigQuery Job User and Data Editor on that project only.
 - Workload Identity Federation pool `github`, provider `foco-revops-warehouse`: accepts only this repository. No key file. The provider and GCP project keep their original IDs, because Google does not allow renaming them.
-- Logs are kept as the `walkthrough-logs` artifact for 7 days.
+- It runs as a matrix over `native`, `fivetran` and `airbyte` fixtures. Logs are kept as `walkthrough-logs-<connector>` artifacts for 7 days. Pull requests from forks skip it (no OIDC token).
 
 ## Cost guards
 
@@ -41,9 +43,10 @@ The Claude workspace and the Mac VM both block `*.googleapis.com`, so Claude can
 
 | Decision | Default |
 |---|---|
-| Make the repo public | Stay private until native tests pass. Publishing also opens a new loop while AdLinter → focosys.io is still open (Meadows rule) |
-| Upgrade dbt from 1.10.x (dbt flags it deprecated) | Separate PR, with its own parse and native run |
-| Run the walkthrough in CI | Later, via Workload Identity Federation. It needs a service account, which requires approval |
+| Submit to dbt Hub (PR to dbt-labs/hubcap adding `ChristopherLandaverde: [pipetrace]` to hub.json) | Prepared, not sent: it is a public post in dbt Labs' repo and needs Christopher's yes |
+| Live data agent | Needs billing on `foco-revops-ci` (Christopher) |
+| GA4 cross-check | Needs a GA4 property with BigQuery export (focosys.io's own) |
+| First real-data run | Christopher's own stack or a client engagement; then update README, VALIDATION and release notes |
 
 ## Links
 
