@@ -16,7 +16,7 @@ with raw as (
     coalesce(json_value(row_json, '$.collected_traffic_source.gclid'),
              {{ extract_event_param('gclid') }}) as gclid,
     {{ extract_event_param('fbclid') }} as fbclid,
-    nullif(trim({{ extract_event_param('original_conversion_id') }}), '') as original_conversion_id,
+    nullif(trim({{ extract_event_param(var('ga4_conversion_token_param')) }}), '') as original_conversion_id,
     {{ extract_event_param('engagement_time_msec', 'int') }} as engagement_time_msec,
     {{ extract_event_param('session_engaged') }} as session_engaged,
     json_value(row_json, '$.session_traffic_source_last_click.cross_channel_campaign.source') as cross_source,

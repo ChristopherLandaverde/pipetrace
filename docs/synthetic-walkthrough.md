@@ -1,6 +1,6 @@
 # Synthetic walkthrough / no client data
 
-This creates two daily GA4 tables, one HubSpot contact, one converted Salesforce lead, and two opportunities in a disposable development project. One session crosses midnight; one opportunity is linked and one remains Unattributed.
+This creates two daily GA4 tables, two HubSpot contacts, three converted Salesforce leads, and five opportunities in a disposable development project. One session crosses midnight. There is one opportunity per attribution level: `o1` by conversion token, `o3` by GA4 client ID across two sessions, `o4` from Salesforce first-touch fields and `o5` from HubSpot's original source. `o2` remains Unattributed. Linear pipeline value totals 2,800 (`o1` uses its ARR).
 
 The SQL generator prints create-only statements; it does not execute them. It does not overwrite existing fixture tables. Do not point it at production datasets.
 

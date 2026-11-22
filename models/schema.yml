@@ -43,8 +43,16 @@ models:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [session_key, original_conversion_id]
+  - name: int_opportunity_identity_paths
+    description: Restricted. One row per opportunity and CRM record path (opportunity, converted lead, HubSpot contact) carrying its conversion token, GA4 client ID and CRM-recorded source. Joins use record IDs, never email.
   - name: int_crm_touchpoint_linkage
-    description: One row per opportunity/session, or one null-session row for unmatched opportunities. Ranked ID paths suppress duplicate evidence.
+    description: One row per opportunity/session at the strongest attribution level available (2 conversion token, 1 GA4 client ID), one session-less row for level 0 (CRM source), or one null-session row for unattributed opportunities. Ranked ID paths suppress duplicate evidence.
+    columns:
+      - name: attribution_basis
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [conversion_token, ga_client_id, crm_source, unattributed]
   - name: dim_touchpoints
     description: Restricted session dimension containing pseudonymous IDs and page URLs. Not a public or immutable history table.
     columns:
@@ -68,7 +76,12 @@ models:
         data_tests: [not_null]
       - name: channel_grouping
         data_tests: [not_null]
+      - name: attribution_level
+        description: 2 conversion token, 1 GA4 client ID, 0 CRM-recorded source (no session), null unattributed.
+      - name: attribution_basis
+        description: Name of the attribution level. Report crm_source separately; it is the CRM's own record, not a traced session.
+        data_tests: [not_null]
   - name: fct_pipeline_attribution_daily
-    description: Preferred BI/agent revenue surface. Allocated values by opportunity creation date, channel, currency, and revenue basis. Do not sum currencies together.
+    description: Preferred BI/agent revenue surface. Allocated values by opportunity creation date, channel, attribution basis, currency, and revenue basis. Do not sum currencies together.
   - name: audit_ga4_unkeyed_events
     description: Events excluded from session modeling due to missing or invalid identifiers. Review consent and instrumentation before interpreting coverage.

@@ -63,18 +63,35 @@ def main():
       d(0).replace('-',''):[event(ts(0,'23:59:00'),'u1',sid(0,'23:59:00'),'conversion-1','email')],
       d(1).replace('-',''):[event(ts(1,'00:01:00'),'u1',sid(0,'23:59:00'),engaged='1'),event(ts(1,'12:00:00'),'u2',sid(1,'12:00:00'),'conversion-2','cpc')],
     }
+    # Level 1: user u3 never submits a token; their GA4 client ID is on lead l3.
+    bydate[d(0).replace('-','')].append(event(ts(0,'10:00:00'),'u3',sid(0,'10:00:00'),medium='cpc'))
+    bydate[d(1).replace('-','')].append(event(ts(1,'15:00:00'),'u3',sid(1,'15:00:00'),medium='email'))
     for day,events in bydate.items():
         print(f'{create} `{datasets["ga4"]}.events_{day}` AS '+ '\nUNION ALL\n'.join(events)+';')
     print(f'''{create} `{datasets['hubspot']}.contacts` AS
 SELECT 'h1' AS id, 'synthetic@example.test' AS property_email, '{ts(0,'23:59:00')}Z' AS property_createdate,
 'EMAIL_MARKETING' AS property_hs_analytics_source, 'synthetic' AS property_hs_analytics_source_data_1,
 'conversion-1' AS property_original_conversion_id, 'QUALIFIED' AS property_hs_lead_status,
-'l1' AS property_salesforceleadid, 'c1' AS property_salesforcecontactid;''')
+'l1' AS property_salesforceleadid, 'c1' AS property_salesforcecontactid,
+CAST(NULL AS STRING) AS property_ga_client_id
+UNION ALL
+-- Level 0: HubSpot's own original source, linked through Opportunity.ContactId.
+SELECT 'h5', 'synthetic5@example.test', '{ts(0,'09:00:00')}Z', 'PAID_SOCIAL', 'synthetic',
+CAST(NULL AS STRING), 'QUALIFIED', CAST(NULL AS STRING), 'c5', CAST(NULL AS STRING);''')
     print(f'''{create} `{datasets['salesforce']}.Lead` AS
 SELECT 'l1' AS Id, 'c1' AS ConvertedContactId, 'o1' AS ConvertedOpportunityId, TRUE AS IsConverted,
 'synthetic@example.test' AS Email, TIMESTAMP('{ts(0,'23:59:00')}Z') AS CreatedDate,
 'newsletter' AS First_Touch_Source__c, 'email' AS First_Touch_Medium__c, 'synthetic' AS First_Touch_Campaign__c,
-'conversion-1' AS Original_Conversion_Id__c, 'Converted' AS Status, FALSE AS IsDeleted;''')
+'conversion-1' AS Original_Conversion_Id__c, 'Converted' AS Status, FALSE AS IsDeleted,
+CAST(NULL AS STRING) AS GA_Client_ID__c
+UNION ALL
+-- Level 1: GA4 client ID captured from the _ga cookie, no conversion token.
+SELECT 'l3', 'c3', 'o3', TRUE, 'synthetic3@example.test', TIMESTAMP('{ts(1,'15:05:00')}Z'),
+CAST(NULL AS STRING), CAST(NULL AS STRING), CAST(NULL AS STRING), CAST(NULL AS STRING), 'Converted', FALSE, 'GA1.1.u3'
+UNION ALL
+-- Level 0: only the first-touch fields Salesforce recorded.
+SELECT 'l4', 'c4', 'o4', TRUE, 'synthetic4@example.test', TIMESTAMP('{ts(1,'09:00:00')}Z'),
+'google', 'organic', 'brand', CAST(NULL AS STRING), 'Converted', FALSE, CAST(NULL AS STRING);''')
     print(f'''{create} `{datasets['salesforce']}.Opportunity` AS
 SELECT 'o1' AS Id, 'a1' AS AccountId, 'c1' AS ContactId, 'Synthetic linked opportunity' AS Name,
 'Closed Won' AS StageName, 1200 AS Amount, 1000 AS ARR__c, 'USD' AS CurrencyIsoCode,
@@ -82,6 +99,15 @@ TRUE AS IsWon, TRUE AS IsClosed, TIMESTAMP('{ts(9,'12:00:00')}Z') AS CreatedDate
 DATE('{d(31)}') AS CloseDate, 'conversion-1' AS Original_Conversion_Id__c, FALSE AS IsDeleted
 UNION ALL
 SELECT 'o2','a2',NULL,'Synthetic unmatched opportunity','Prospecting',500,NULL,'USD',FALSE,FALSE,
+TIMESTAMP('{ts(9,'12:00:00')}Z'), DATE('{d(59)}'),NULL,FALSE
+UNION ALL
+SELECT 'o3','a3',NULL,'Synthetic client-ID opportunity','Qualification',800,NULL,'USD',FALSE,FALSE,
+TIMESTAMP('{ts(9,'12:00:00')}Z'), DATE('{d(59)}'),NULL,FALSE
+UNION ALL
+SELECT 'o4','a4',NULL,'Synthetic CRM-source opportunity','Qualification',300,NULL,'USD',FALSE,FALSE,
+TIMESTAMP('{ts(9,'12:00:00')}Z'), DATE('{d(59)}'),NULL,FALSE
+UNION ALL
+SELECT 'o5','a5','c5','Synthetic HubSpot-source opportunity','Qualification',200,NULL,'USD',FALSE,FALSE,
 TIMESTAMP('{ts(9,'12:00:00')}Z'), DATE('{d(59)}'),NULL,FALSE;''')
     variables={f'{k}_dataset':f'{args.prefix}_{k}' for k in datasets}
     variables.update(ga4_start_date=d(0),ga4_end_date=d(1),ga4_timezone='UTC',fixture_base_date=d(0))

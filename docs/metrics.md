@@ -17,7 +17,7 @@
 
 Unknown amounts stay null in the detail bridge. SUM ignores nulls, so an all-unknown group returns null and a mixed group represents only known value. Check opportunity completeness against staging before making financial decisions.
 
-First-observed attribution does not claim a complete acquisition journey. Missing identity, consent limits, the raw observation window, and CRM sync quality limit linkage coverage. Unattributed means no eligible deterministic web match; it does not mean Direct traffic.
+First-observed attribution does not claim a complete acquisition journey. Missing identity, consent limits, the raw observation window, and CRM sync quality limit linkage coverage. Unattributed means no eligible deterministic web match and no CRM-recorded source; it does not mean Direct traffic. `crm_source` rows (level 0) carry the CRM's own channel claim with no session, so split every revenue answer by `attribution_basis`. `Unassigned` is a channel the rules could not map; `Unattributed` is a deal with no evidence.
 
 The channel grouping is intentionally a small transparent rule set. Exported source/medium are retained so consumers can implement an organization-specific taxonomy without rewriting session identity.
 

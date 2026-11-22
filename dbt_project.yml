@@ -20,6 +20,21 @@ vars:
   ga4_end_date: null
   attribution_lookback_days: 90
   lead_conversion_events: [generate_lead, form_submit, demo_request]
+  # Matching fields. Names are case-sensitive and may be absent: a missing
+  # column reads as NULL, and that attribution level is simply not reached.
+  ga4_conversion_token_param: original_conversion_id
+  hubspot_conversion_token_property: property_original_conversion_id
+  hubspot_ga_client_id_property: property_ga_client_id
+  sfdc_lead_conversion_token_field: Original_Conversion_Id__c
+  sfdc_lead_ga_client_id_field: GA_Client_ID__c
+  sfdc_lead_first_touch_source_field: First_Touch_Source__c
+  sfdc_lead_first_touch_medium_field: First_Touch_Medium__c
+  sfdc_lead_first_touch_campaign_field: First_Touch_Campaign__c
+  sfdc_opportunity_conversion_token_field: Original_Conversion_Id__c
+  sfdc_opportunity_ga_client_id_field: GA_Client_ID__c
+  # Attribution levels: 2 conversion token, 1 GA4 client ID, 0 CRM source.
+  enable_ga_client_id_matching: true
+  enable_crm_source_fallback: true
 models:
   pipetrace:
     +persist_docs: {relation: true, columns: true}
