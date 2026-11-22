@@ -24,3 +24,8 @@
 - 2026-11-17: Public name PipeTrace (Christopher's choice), an instrument name for what it verifies: pipeline traced to sessions. The repo is renamed to `pipetrace` and the dbt project to `pipetrace`. There are no external consumers, so the vars namespace change breaks nothing.
 - 2026-11-17: Logo in the OSRA/Rabbit Focosys palette (#10231F tile, #F3F0E6 paper, #D7FF69 verified) per Christopher, not the navy linter family.
 - 2026-11-17: GCP project `foco-revops-ci` and WIF provider `foco-revops-warehouse` keep their IDs (immutable). The provider condition and service account grant were widened to both repo names during the rename, then narrowed to `pipetrace` once CI passed under the new name.
+- 2026-11-22: Christopher approved the six-step open-source plan in chat, including merging each PR once CI and an independent review pass. The dbt Hub request is held for his separate yes.
+- 2026-11-22: Three attribution levels (2 conversion token, 1 GA4 client ID, 0 CRM source). Strongest level wins per opportunity and is labeled on every row; levels never mix within one opportunity, so weights still sum to 1.
+- 2026-11-22: Optional CRM fields are read through TO_JSON_STRING/JSON_VALUE so a missing column reads as NULL. Trade-off: a misspelled var now silently skips a level instead of failing. The readiness check (next PR) reports fields that are 100% NULL.
+- 2026-11-22: Level 0 uses only CRM records created on or before the opportunity, with deterministic tiebreaks by record created_at and ID (review findings 3 and 4).
+- 2026-11-22: Level 1 credits sessions of every client ID found on the opportunity's records (several devices credit equally). Documented rather than restricted.

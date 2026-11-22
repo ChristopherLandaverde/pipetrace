@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  12 dbt models on BigQuery · first-observed and linear credit that sums to 1 per opportunity · 45 of 45 dbt nodes pass on BigQuery in CI (12 models, 33 tests) · read-only on GA4, HubSpot and Salesforce
+  13 dbt models on BigQuery · three attribution levels, each labeled · first-observed and linear credit that sums to 1 per opportunity · 49 of 49 dbt nodes pass on BigQuery in CI (13 models, 36 tests) · read-only on GA4, HubSpot and Salesforce
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@ PipeTrace is a dbt package for marketing ops and RevOps analysts who have to say
   <br><sub>Model names and checks as built. The counts come from the CI run on synthetic data.</sub>
 </p>
 
-`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 12 models, with 31 data tests, 1 native unit test, and 1 fixture-only check that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
+`Scope /` reads GA4 daily exports, HubSpot contacts, and Salesforce leads and opportunities. It builds 13 models, with 34 data tests, 1 native unit test, and 1 fixture-only check that runs only on synthetic data. It does not write to GA4, HubSpot, or Salesforce. It does not stitch identities by email, convert currency, or host a dbt Semantic Layer service.
 
 It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQuery Semantic Layer**. Sessions are modeled across daily export tables. Session attribution stays separate from lifetime acquisition. Polymorphic parameters are coerced safely. Immutable conversion tokens link sessions to CRM opportunities.
 
@@ -45,10 +45,11 @@ It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQ
              multiply revenue
 + REPAIRED   one session per composite key; ranked deterministic ID linkage;
              first-observed and linear weights that sum to 1 per opportunity;
+             three attribution levels, strongest wins per deal and is labeled;
              unmatched deals kept as Unattributed
 ✓ VERIFIED   14 local relational tests pass; dbt parse passes in CI;
-             native BigQuery build passes 45 of 45 (12 models, 31 data tests
-             + 1 fixture check, 1 unit test) on synthetic data, run 44109338907
+             native BigQuery build passes 49 of 49 (13 models, 34 data tests
+             + 1 fixture check, 1 unit test) on synthetic data, run 45026750756
 ```
 
 See the [validation record](VALIDATION.md) for what has run and what has not.
@@ -102,6 +103,19 @@ packages:
 
 Run `dbt deps` in the consuming project and configure variables under `pipetrace` in that project's `vars`. The package also works as a standalone modeling repository. A Git URL package entry also works once the repository is reachable from your dbt environment.
 
+## Attribution levels
+
+Each opportunity is credited at the strongest level its data supports. Every row carries `attribution_level` and `attribution_basis`.
+
+| Level | `attribution_basis` | Evidence | Needs |
+|---|---|---|---|
+| 2 | `conversion_token` | GA4 sessions holding the token copied to the CRM | Token in GA4, HubSpot and Salesforce |
+| 1 | `ga_client_id` | Every eligible GA4 session of the client ID stored on a CRM record | One hidden form field with the GA4 client ID |
+| 0 | `crm_source` | The source HubSpot or Salesforce recorded. No session | Nothing new |
+| — | `unattributed` | None | — |
+
+Levels 1 and 2 are traced to sessions. Level 0 is the CRM's own claim, so report it separately: the daily mart keeps `attribution_basis` as a dimension. Match fields are dbt vars in `dbt_project.yml`. They are case-sensitive, and a missing column reads as NULL rather than failing the build, so that level is simply not reached. Turn levels off with `enable_ga_client_id_matching` and `enable_crm_source_fallback`.
+
 ## Model surfaces
 
 | Model | Grain | Intended use |
@@ -112,6 +126,7 @@ Run `dbt deps` in the consuming project and configure variables under `pipetrace
 | `stg_sfdc_opportunities` | Current opportunity | Revenue reconciliation |
 | `int_ga4_sessions` | User pseudonym + session ID | Session metrics and provenance |
 | `int_session_conversion_tokens` | Session + conversion token | Preserve multiple conversions per session |
+| `int_opportunity_identity_paths` | Opportunity + CRM record path | Restricted token, client ID and CRM-source evidence |
 | `int_crm_touchpoint_linkage` | Opportunity + session, including unmatched | Auditable linkage evidence |
 | `dim_touchpoints` | Session | Restricted session detail |
 | `fct_ga4_sessions_daily` | Date + channel/source/medium/campaign | Traffic reporting |
@@ -125,7 +140,7 @@ See [architecture and decisions](docs/architecture.md), [metric definitions](doc
 
 The default window covers sessions starting from 90 days ago through yesterday in the property timezone. Raw daily shards include a two-day buffer on each boundary. Old opportunities remain in the pipeline output but become unattributed when their eligible sessions fall outside the observation window. Set a fixed `ga4_start_date` for durable historical reporting. A rolling-window build replaces prior output; it is not an attribution history store.
 
-First touch means the earliest **observed, token-linked** eligible session, not the first anonymous visit in a person's lifetime. The package does not stitch identities by email, infer anonymous journeys, model consent-denied users, perform FX conversion, or implement Google's complete channel-group rules. `fbclid` alone does not prove a paid-social click.
+First touch means the earliest **observed, linked** eligible session (level 1 or 2), not the first anonymous visit in a person's lifetime. The package does not stitch identities by email, infer anonymous journeys, model consent-denied users, perform FX conversion, or implement Google's complete channel-group rules. `fbclid` alone does not prove a paid-social click.
 
 This is a governed SQL modeling layer, not a deployed dbt Semantic Layer/MetricFlow service. Metric definitions and safe query examples are included. Production validation, IAM grants, and scheduling remain deployment tasks.
 
