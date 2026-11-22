@@ -94,4 +94,4 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: [ok, low, missing, review, no_rows]
+                values: [ok, low, missing, review, no_rows, 'off']

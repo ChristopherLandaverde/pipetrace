@@ -8,7 +8,7 @@
     {{ exceptions.raise_compiler_error('pipetrace_readiness not found in ' ~ relation ~ '. Run dbt build first.') }}
   {% endif %}
   {% set results = run_query('select area, check_name, description, numerator, denominator, share, status, guide_section from ' ~ relation ~ ' order by check_order') %}
-  {% set marks = {'ok': '✓', 'low': '!', 'missing': '×', 'review': '!', 'no_rows': '·'} %}
+  {% set marks = {'ok': '✓', 'low': '!', 'missing': '×', 'review': '!', 'no_rows': '·', 'off': '-'} %}
   {{ print('PipeTrace readiness · ' ~ relation) }}
   {% set ns = namespace(area='', next=[]) %}
   {% for row in results.rows %}

@@ -98,8 +98,10 @@ select check_order, area, check_name, description, numerator, denominator,
   safe_divide(numerator, denominator) as share,
   case
     when check_name = 'ga4_sessions_in_window' then if(numerator > 0, 'ok', 'missing')
-    when check_name = 'unattributed' then if(numerator = 0, 'ok', 'review')
+    when check_name = 'level_1_ga_client_id' and not {{ pipetrace_flag('enable_ga_client_id_matching') }} then 'off'
+    when check_name = 'level_0_crm_source' and not {{ pipetrace_flag('enable_crm_source_fallback') }} then 'off'
     when denominator is null or denominator = 0 then 'no_rows'
+    when check_name = 'unattributed' then if(numerator = 0, 'ok', 'review')
     when numerator = 0 then 'missing'
     when area = 'level' then 'ok'
     when safe_divide(numerator, denominator) < 0.5 then 'low'
