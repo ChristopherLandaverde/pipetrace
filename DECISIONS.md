@@ -12,7 +12,7 @@
 - Add Python standard-library relational acceptance tests because local package downloads are blocked. These execute actual CRM/attribution SQL with narrowly documented dialect substitutions; native BigQuery tests remain mandatory.
 - Treat the README's Readable Layer as governed SQL tables, not an implicitly deployed dbt Semantic Layer service.
 - 2026-11-17: Imported the supplied archive as the initial commit on the empty `main` branch at Christopher's request. Later changes go to `build/*` branches as draft PRs.
-- 2026-11-17: Vendored dbt_utils 1.3.0 from its GitHub tag into the git-ignored `dbt_packages/` for the local parse only, because dbt Hub is blocked here. `packages.yml` is unchanged; CI resolves from Hub.
+- 2026-11-17: Vendored dbt_utils 1.3.0 from its GitHub tag into the git-ignored `dbt_packages/` for the local parse only, because dbt Hub is blocked here. `packages.yml` is unchanged; CI resolves from Hub. (2026-11-22: packages.yml now accepts dbt_utils >=1.0.0,<2.0.0; CI resolved 1.4.1.)
 - 2026-11-17: Kept dbt-core pinned to 1.10.x even though dbt reports that line deprecated. An upgrade is a dependency change outside the approved stack and needs its own parse and native run.
 - 2026-11-17: Rewrote the README opening as a foco-brand trace with resource counts. The repository stays private; making it public is Christopher's decision. (2026-11-22: Christopher made it public.)
 - 2026-11-17: Created GCP project `foco-revops-ci` (org focosys.io) for CI only, with no billing account, so BigQuery runs in the free sandbox. The service account `foco-ci-walkthrough` holds only BigQuery Job User and Data Editor on that project.
