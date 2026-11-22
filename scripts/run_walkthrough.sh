@@ -68,6 +68,12 @@ fi
 set +e
 .venv/bin/dbt build --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce, ga4_start_date: '${BASE_DATE}', ga4_end_date: '${END_DATE}', ga4_timezone: UTC, fixture_base_date: '${BASE_DATE}', validate_fixture: true}"
 STATUS=$?
+if [ "$STATUS" -eq 0 ]; then
+  # Readiness report; fails the run if the doctor macro cannot read its table.
+  .venv/bin/dbt run-operation pipetrace_doctor --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce}"
+  DOCTOR_STATUS=$?
+  [ "$DOCTOR_STATUS" -eq 0 ] || { echo "× BROKEN  dbt build passed but pipetrace_doctor exited $DOCTOR_STATUS"; STATUS=$DOCTOR_STATUS; }
+fi
 set -e
 
 if [ "$STATUS" -eq 0 ]; then

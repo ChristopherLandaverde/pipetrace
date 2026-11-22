@@ -29,3 +29,4 @@
 - 2026-11-22: Optional CRM fields are read through TO_JSON_STRING/JSON_VALUE so a missing column reads as NULL. Trade-off: a misspelled var now silently skips a level instead of failing. The readiness check (next PR) reports fields that are 100% NULL.
 - 2026-11-22: Level 0 uses only CRM records created on or before the opportunity, with deterministic tiebreaks by record created_at and ID (review findings 3 and 4).
 - 2026-11-22: Level 1 credits sessions of every client ID found on the opportunity's records (several devices credit equally). Documented rather than restricted.
+- 2026-11-22: The readiness check is a table (`pipetrace_readiness`) plus a print macro (`pipetrace_doctor`), not a macro alone, so it is tested natively and queryable from BI. It reads built models, so it runs after `dbt build`. A field at 0% shows as missing; below 50% as low.

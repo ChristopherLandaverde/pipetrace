@@ -47,3 +47,5 @@ models:
     marts:
       +materialized: table
       +tags: [readable_layer]
+    readiness:
+      +materialized: table
