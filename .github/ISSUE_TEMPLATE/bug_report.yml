@@ -1,0 +1,39 @@
+name: Bug report
+description: A model, test or number that is wrong. No client data.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Remove client names, emails, IDs and revenue figures before posting. Synthetic examples are best.
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed
+      description: What happened. Paste the failing test, error or wrong number.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: pipetrace_doctor output
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: dbt-core / dbt-bigquery / PipeTrace versions
+      placeholder: 1.12.7 / 1.12.4 / v1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: connector
+    attributes:
+      label: pipetrace_connector
+      options: [native, fivetran, airbyte]
+    validations:
+      required: true

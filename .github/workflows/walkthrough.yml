@@ -40,6 +40,9 @@ jobs:
       matrix:
         connector: [native, fivetran, airbyte]
     name: walkthrough (${{ matrix.connector }})
+    # Pull requests from forks get no OIDC token, so BigQuery sign-in cannot
+    # work there. Skip instead of failing; a maintainer runs it before merge.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

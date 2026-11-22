@@ -1,0 +1,16 @@
+name: Feature request
+description: A source, loader, attribution path or check PipeTrace should support.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: decision
+    attributes:
+      label: The decision you cannot make today
+      description: What question about pipeline or channels does this answer?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Tables, fields or loader involved. Link docs for the source schema if you can.
