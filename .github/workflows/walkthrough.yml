@@ -35,6 +35,11 @@ jobs:
   walkthrough:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        connector: [native, fivetran, airbyte]
+    name: walkthrough (${{ matrix.connector }})
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -47,9 +52,11 @@ jobs:
           service_account: ${{ env.GCP_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v2
       - run: bash scripts/run_walkthrough.sh "$GCP_PROJECT_ID" "$GCP_LOCATION"
+        env:
+          PIPETRACE_CONNECTOR: ${{ matrix.connector }}
       - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: walkthrough-logs
+          name: walkthrough-logs-${{ matrix.connector }}
           path: logs/
           retention-days: 7

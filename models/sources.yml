@@ -12,12 +12,13 @@ sources:
     schema: "{{ var('hubspot_dataset') }}"
     tables:
       - name: contacts
+        identifier: "{{ var('hubspot_contacts_table', {'fivetran': 'contact'}.get(var('pipetrace_connector', 'native') | lower, 'contacts')) }}"
         description: Current contact snapshot with the property_* contract in docs/source-contracts.md.
   - name: salesforce
     database: "{{ var('salesforce_project', target.project) }}"
     schema: "{{ var('salesforce_dataset') }}"
     tables:
       - name: leads
-        identifier: Lead
+        identifier: "{{ var('sfdc_lead_table', {'fivetran': 'lead'}.get(var('pipetrace_connector', 'native') | lower, 'Lead')) }}"
       - name: opportunities
-        identifier: Opportunity
+        identifier: "{{ var('sfdc_opportunity_table', {'fivetran': 'opportunity'}.get(var('pipetrace_connector', 'native') | lower, 'Opportunity')) }}"

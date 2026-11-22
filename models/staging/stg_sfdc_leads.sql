@@ -2,7 +2,7 @@
 -- through JSON so a missing field becomes NULL instead of failing the build.
 with raw as (
   select t.*, to_json_string(t) as row_json
-  from {{ source('salesforce', 'leads') }} as t
+  from {{ pipetrace_crm_relation('salesforce', 'leads') }} as t
 )
 select
   cast(Id as string) as sfdc_lead_id,

@@ -14,13 +14,17 @@ if [ -n "${PIPETRACE_DEMO_PREFIX:-}" ]; then
 else
   PREFIX="foco_fixture_$(date -u +%Y%m%d%H%M%S)"; EXPIRY_DAYS=7; GEN_EXTRA=""
 fi
+# PIPETRACE_CONNECTOR shapes the CRM fixture as native, fivetran or airbyte tables.
+CONNECTOR="${PIPETRACE_CONNECTOR:-native}"
+case "$CONNECTOR" in native|fivetran|airbyte) ;; *) echo "× BROKEN  PIPETRACE_CONNECTOR must be native, fivetran or airbyte"; exit 1;; esac
+[ "$CONNECTOR" = native ] || [ -n "${PIPETRACE_DEMO_PREFIX:-}" ] || PREFIX="${PREFIX}_${CONNECTOR}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 mkdir -p logs
 LOG="logs/walkthrough-${PREFIX}.log"
 exec > >(tee "$LOG") 2>&1
 
-echo "□ OBSERVED  project=$PROJECT location=$LOCATION prefix=$PREFIX"
+echo "□ OBSERVED  project=$PROJECT location=$LOCATION prefix=$PREFIX connector=$CONNECTOR"
 
 for cmd in python3 gcloud bq; do
   command -v "$cmd" >/dev/null || { echo "× BROKEN  missing $cmd (install Google Cloud SDK: brew install --cask google-cloud-sdk)"; exit 1; }
@@ -54,7 +58,7 @@ BASE_DATE="$(python3 -c 'import datetime as d; print(d.datetime.now(d.timezone.u
 END_DATE="$(python3 -c "import datetime as d; print(d.date.fromisoformat('$BASE_DATE')+d.timedelta(days=1))")"
 echo "↓ TRACED  fixture base date $BASE_DATE"
 echo "↓ TRACED  creating synthetic fixture datasets ${PREFIX}_{ga4,hubspot,salesforce}"
-python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" --expiration-days "$EXPIRY_DAYS" $GEN_EXTRA > "logs/${PREFIX}.sql"
+python3 scripts/generate_fixture.py --project "$PROJECT" --prefix "$PREFIX" --location "$LOCATION" --base-date "$BASE_DATE" --expiration-days "$EXPIRY_DAYS" --connector "$CONNECTOR" $GEN_EXTRA > "logs/${PREFIX}.sql"
 bq query --project_id="$PROJECT" --location="$LOCATION" --use_legacy_sql=false --maximum_bytes_billed="$MAX_BYTES" < "logs/${PREFIX}.sql" >/dev/null
 
 # Cleanup guard: every table and view in these datasets expires after 7 days,
@@ -66,11 +70,11 @@ fi
 .venv/bin/dbt deps
 .venv/bin/dbt debug --profiles-dir logs
 set +e
-.venv/bin/dbt build --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce, ga4_start_date: '${BASE_DATE}', ga4_end_date: '${END_DATE}', ga4_timezone: UTC, fixture_base_date: '${BASE_DATE}', validate_fixture: true}"
+.venv/bin/dbt build --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce, ga4_start_date: '${BASE_DATE}', ga4_end_date: '${END_DATE}', ga4_timezone: UTC, fixture_base_date: '${BASE_DATE}', validate_fixture: true, pipetrace_connector: ${CONNECTOR}}"
 STATUS=$?
 if [ "$STATUS" -eq 0 ]; then
   # Readiness report; fails the run if the doctor macro cannot read its table.
-  .venv/bin/dbt run-operation pipetrace_doctor --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce}"
+  .venv/bin/dbt run-operation pipetrace_doctor --profiles-dir logs --vars "{ga4_dataset: ${PREFIX}_ga4, hubspot_dataset: ${PREFIX}_hubspot, salesforce_dataset: ${PREFIX}_salesforce, pipetrace_connector: ${CONNECTOR}}"
   DOCTOR_STATUS=$?
   [ "$DOCTOR_STATUS" -eq 0 ] || { echo "× BROKEN  dbt build passed but pipetrace_doctor exited $DOCTOR_STATUS"; STATUS=$DOCTOR_STATUS; }
 fi

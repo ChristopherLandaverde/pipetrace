@@ -2,7 +2,7 @@
 -- instead of failing the build. Property names are set in dbt_project.yml vars.
 with raw as (
   select t.*, to_json_string(t) as row_json
-  from {{ source('hubspot', 'contacts') }} as t
+  from {{ pipetrace_crm_relation('hubspot', 'contacts') }} as t
 )
 select
   cast(id as string) as hubspot_contact_id,
