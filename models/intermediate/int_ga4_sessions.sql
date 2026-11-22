@@ -45,16 +45,6 @@ with attributed_events as (
   where session_date between {{ ga4_start_date() }} and {{ ga4_end_date() }}
 )
 select *,
-  case
-    when lower(session_medium) in ('paid_social', 'paidsocial') then 'Paid Social'
-    when lower(session_medium) in ('cpc', 'ppc', 'paidsearch') then 'Paid Search'
-    when lower(session_medium) in ('email', 'newsletter') then 'Email'
-    when lower(session_medium) = 'organic' then 'Organic Search'
-    when lower(session_medium) = 'referral' then 'Referral'
-    when lower(session_medium) = 'social' then 'Organic Social'
-    when (session_source is null or session_source = '(direct)')
-      and (session_medium is null or session_medium in ('(none)', '(not set)')) then 'Direct'
-    else 'Unassigned'
-  end as session_default_channel_grouping
+  {{ pipetrace_channel_grouping('session_source', 'session_medium') }} as session_default_channel_grouping
 from flattened
 -- Deliberately simplified channel rules; fbclid alone is not evidence of paid traffic.

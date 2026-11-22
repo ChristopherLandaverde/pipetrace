@@ -21,7 +21,7 @@ Give the agent read access to these two tables only:
 
 | Table | Grain | Use for |
 |---|---|---|
-| `fct_pipeline_attribution_daily` | Opportunity creation date × channel × currency × revenue basis | Pipeline and won value by channel |
+| `fct_pipeline_attribution_daily` | Opportunity creation date × channel × attribution basis × currency × revenue basis | Pipeline and won value by channel |
 | `fct_ga4_sessions_daily` | Session date × channel × source × medium × campaign | Traffic, engagement and lead-conversion sessions |
 
 Leave out the raw `events_*` tables, the staging views and `fct_revops_pipeline_attribution`. The bridge table repeats `opp_pipeline_value` and `opp_arr` on every touchpoint row, so an agent that sums them multiplies revenue.
@@ -43,6 +43,9 @@ Revenue
   attribution". State the date range, which is the opportunity creation date.
 - Report the Unattributed share next to channel totals. Unattributed means no
   deterministic web match was found; it does not mean Direct.
+- attribution_basis says how each deal was credited: conversion_token or
+  ga_client_id (traced to GA4 sessions) or crm_source (the CRM's own recorded
+  source, no session). Report the crm_source share separately when it is not 0.
 - won_value columns are filtered on the opportunity's current won status, by
   creation cohort. They are not bookings by close date.
 - ARR columns exclude deals with no ARR. Never substitute Amount for ARR.

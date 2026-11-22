@@ -18,6 +18,7 @@ select
   safe_cast(IsClosed as bool) as is_closed,
   safe_cast(CreatedDate as timestamp) as created_at,
   safe_cast(CloseDate as date) as close_date,
-  nullif(trim(cast(Original_Conversion_Id__c as string)), '') as original_conversion_id
+  {{ pipetrace_optional_column(var('sfdc_opportunity_conversion_token_field')) }} as original_conversion_id,
+  {{ pipetrace_normalize_ga_client_id(pipetrace_optional_column(var('sfdc_opportunity_ga_client_id_field'))) }} as ga_client_id
 from raw
 where not coalesce(safe_cast(IsDeleted as bool), false)
