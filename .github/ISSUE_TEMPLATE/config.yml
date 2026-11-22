@@ -4,5 +4,5 @@ contact_links:
     url: https://github.com/ChristopherLandaverde/pipetrace/blob/main/docs/setup-guide.md
     about: Attribution levels, hidden form fields, and reading pipetrace_doctor.
   - name: Security report
-    url: mailto:christopher@focosys.io
-    about: Report vulnerabilities privately.
+    url: https://github.com/ChristopherLandaverde/pipetrace/blob/main/SECURITY.md
+    about: Report vulnerabilities privately, not in a public issue.

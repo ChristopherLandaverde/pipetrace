@@ -26,7 +26,7 @@ To run the full build against BigQuery, use your own development project: `bash 
 | `validate` | Every push and pull request | Nothing |
 | `walkthrough (native, fivetran, airbyte)` | Pull requests from branches of this repository, and manual runs | The maintainer's BigQuery sandbox |
 
-GitHub does not give pull requests from forks the identity token the BigQuery sign-in needs, so the walkthrough is skipped on them (shown as skipped, not failed). A maintainer runs it before merging.
+GitHub does not give pull requests from forks the identity token the BigQuery sign-in needs, so the walkthrough job is skipped on them (one skipped check, not a failure). A maintainer runs it before merging.
 
 ## Rules for changes
 
