@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <a href="#quickstart">Quickstart</a> · <a href="#the-trace">The trace</a> · <a href="#model-surfaces">Model surfaces</a> · <a href="#limits-that-affect-interpretation">Known limits</a> · <a href="VALIDATION.md">Validation record</a> · <a href="docs/synthetic-walkthrough.md">Synthetic walkthrough</a>
+  <a href="#start-here">Start here</a> · <a href="docs/setup-guide.md">Setup guide</a> · <a href="#the-trace">The trace</a> · <a href="#model-surfaces">Model surfaces</a> · <a href="#limits-that-affect-interpretation">Known limits</a> · <a href="VALIDATION.md">Validation record</a> · <a href="docs/synthetic-walkthrough.md">Synthetic walkthrough</a> · <a href="CHANGELOG.md">Changelog</a> · <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 `dbt package · Nov 2026 · Implementation notes, assumptions, and limits · Walkthrough / no client data`
@@ -54,7 +54,35 @@ It builds the readable layer described in **FOCO Analytics Engineering Lab: BigQ
 
 See the [validation record](VALIDATION.md) for what has run and what has not.
 
-## Quickstart
+## Start here
+
+1. Install the package (below) and point it at your GA4, HubSpot and Salesforce datasets. Set `pipetrace_connector` to `native`, `fivetran` or `airbyte`.
+2. `dbt build`, then `dbt run-operation pipetrace_doctor`. The first build already credits deals by the source your CRM recorded (level 0).
+3. Follow the [setup guide](docs/setup-guide.md) for the field the doctor says is missing: a GA4 client ID on the form (level 1), then a conversion token (level 2).
+
+### Install as a dbt package
+
+In your dbt project's `packages.yml`:
+
+```yaml
+packages:
+  - git: "https://github.com/ChristopherLandaverde/pipetrace.git"
+    revision: v1.0.0
+```
+
+Then set the variables under `pipetrace` in your `dbt_project.yml` and run `dbt deps`:
+
+```yaml
+vars:
+  pipetrace:
+    ga4_dataset: analytics_123456789
+    hubspot_dataset: hubspot
+    salesforce_dataset: salesforce
+    ga4_timezone: America/New_York
+    pipetrace_connector: fivetran
+```
+
+## Quickstart (standalone repository)
 
 Requires Python 3.10+, dbt Core 1.12 (tested; the package declares >=1.10.5), a BigQuery development project, and Application Default Credentials. All source and output datasets must share a BigQuery location.
 
@@ -94,17 +122,6 @@ python3 scripts/test_local.py
 ```
 
 For the complete BigQuery path, follow [the synthetic walkthrough](docs/synthetic-walkthrough.md). It creates new fixture tables in a development project; it never uses client data.
-
-### Install as a dbt package
-
-Use this checkout as a local package in a consuming dbt project:
-
-```yaml
-packages:
-  - local: /absolute/path/to/pipetrace
-```
-
-Run `dbt deps` in the consuming project and configure variables under `pipetrace` in that project's `vars`. The package also works as a standalone modeling repository. A Git URL package entry also works once the repository is reachable from your dbt environment.
 
 ## Attribution levels
 

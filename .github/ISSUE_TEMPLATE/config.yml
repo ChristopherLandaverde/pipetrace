@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup guide
+    url: https://github.com/ChristopherLandaverde/pipetrace/blob/main/docs/setup-guide.md
+    about: Attribution levels, hidden form fields, and reading pipetrace_doctor.
+  - name: Security report
+    url: mailto:christopher@focosys.io
+    about: Report vulnerabilities privately.
